@@ -1,21 +1,8 @@
-use {
-    crate::prelude::*,
-    std::mem::size_of,
-};
+use crate::prelude::*;
 
 struct Integer<T> {
     is_negative: bool,
     unsigned: T,
-}
-
-
-impl StableHash for usize {
-    fn stable_hash(&self, sequence_number: impl SequenceNumber, state: &mut impl StableHasher) {
-        // This could go up to any arbitrary size and be backward compatible. The assert is just there as a reminder
-        // to put in a (*self as _platform_native_type_) if there is such a thing.
-        assert!(size_of::<usize>() < size_of::<u64>());
-        (*self as u64).stable_hash(sequence_number, state)
-    }
 }
 
 macro_rules! impl_int {
@@ -40,7 +27,7 @@ macro_rules! impl_int {
             fn stable_hash(&self, sequence_number: impl SequenceNumber, state: &mut impl StableHasher) {
                 Integer {
                     is_negative: *self < 0,
-                    unsigned: (*self).abs() as $P,
+                    unsigned: self.abs() as $P,
                 }.stable_hash(sequence_number, state)
             }
         }
@@ -52,3 +39,4 @@ impl_int!(u64, i64);
 impl_int!(u32, i32);
 impl_int!(u16, i16);
 impl_int!(u8, i8);
+impl_int!(usize, isize);
