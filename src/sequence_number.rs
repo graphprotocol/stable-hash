@@ -1,11 +1,15 @@
-use std::num::Wrapping;
 use std::borrow::Borrow;
+use std::num::Wrapping;
 
 pub trait SequenceNumber {
-    type Rollup : Borrow<[u8]>;
+    type Rollup: Borrow<[u8]>;
     fn rollup(&self) -> Self::Rollup;
-    fn root() -> Self where Self : Sized;
-    fn next_child(&mut self) -> Self where Self : Sized;
+    fn root() -> Self
+    where
+        Self: Sized;
+    fn next_child(&mut self) -> Self
+    where
+        Self: Sized;
 }
 
 pub struct SequenceNumberInt<T> {
@@ -16,7 +20,7 @@ pub struct SequenceNumberInt<T> {
 macro_rules! impl_sequence_no {
     ($T:ty, $size:expr, $prime_init:expr, $prime_mult:expr) => {
         impl SequenceNumber for SequenceNumberInt<$T> {
-            type Rollup=[u8; $size];
+            type Rollup = [u8; $size];
             fn root() -> Self {
                 Self {
                     rollup: Wrapping($prime_init),
@@ -31,10 +35,7 @@ macro_rules! impl_sequence_no {
 
                 let rollup = (self.rollup * Wrapping($prime_mult)) + Wrapping(child as $T);
 
-                Self {
-                    rollup,
-                    child,
-                }
+                Self { rollup, child }
             }
 
             #[inline]
@@ -42,7 +43,7 @@ macro_rules! impl_sequence_no {
                 self.rollup.0.to_le_bytes()
             }
         }
-    }
+    };
 }
 
 // These values are locked in!
@@ -52,10 +53,10 @@ impl_sequence_no!(u32, 4, 17, 486_187_739);
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use std::borrow::Borrow;
     use std::collections::HashSet;
     use std::hash::Hash;
-    use std::borrow::Borrow;
-    use super::*;
 
     /// This test demonstrates that our choice of primes and algorithm is a good
     /// one for our use case of common structures to be digested by trying every
@@ -79,7 +80,11 @@ mod tests {
         let mut collector = HashSet::new();
         let root = SequenceNumberInt::<u64>::root();
 
-        fn recurse<T: Hash + Eq + Borrow<[u8]>>(mut sequence_number: impl SequenceNumber<Rollup=T>, depth: usize, collector: &mut HashSet<T>) {
+        fn recurse<T: Hash + Eq + Borrow<[u8]>>(
+            mut sequence_number: impl SequenceNumber<Rollup = T>,
+            depth: usize,
+            collector: &mut HashSet<T>,
+        ) {
             // Struct/Recursion check
             for _ in 0..6 {
                 let child = sequence_number.next_child();
