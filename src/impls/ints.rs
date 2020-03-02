@@ -15,8 +15,10 @@ macro_rules! impl_int {
             ) {
                 self.is_negative
                     .stable_hash(sequence_number.next_child(), state);
-                let bytes = self.unsigned.to_le_bytes();
-                state.write(sequence_number, trim_zeros(&bytes));
+                if self.unsigned != 0 {
+                    let bytes = self.unsigned.to_le_bytes();
+                    state.write(sequence_number, trim_zeros(&bytes));
+                }
             }
         }
 
@@ -41,7 +43,7 @@ macro_rules! impl_int {
             ) {
                 Integer {
                     is_negative: *self < 0,
-                    unsigned: self.abs() as $P,
+                    unsigned: self.wrapping_abs() as $P,
                 }
                 .stable_hash(sequence_number, state)
             }

@@ -8,3 +8,6 @@ edition = "2018"
 
 [dependencies]
 num-traits = "0.2.11"
+
+[dev-dependencies]
+twox-hash = "1.5.0"

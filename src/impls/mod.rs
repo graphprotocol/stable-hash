@@ -4,6 +4,7 @@ mod hash_map;
 mod hash_set;
 mod ints;
 mod option;
+mod string;
 mod tuple;
 mod vec;
 

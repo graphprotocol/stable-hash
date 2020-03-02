@@ -36,10 +36,6 @@ impl<T: Hasher + Default> StableHasherWrapper<T> {
 impl<T: Hasher + Default> StableHasher for StableHasherWrapper<T> {
     type Out = u64;
     fn write(&mut self, sequence_number: impl SequenceNumber, bytes: &[u8]) {
-        // TODO: To nudge this closer to crypto strength, consider writing the
-        // length (of bytes), followed by sequence depth (usize) and sequence
-        // child (usize) all as prefix varint. This should make everything
-        // injective.
         let seq_no = sequence_number.rollup();
         self.0.write(seq_no.borrow());
         self.0.write(bytes);
