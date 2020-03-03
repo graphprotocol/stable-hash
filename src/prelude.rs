@@ -1,5 +1,4 @@
-pub(crate) use crate::{
-    sequence_number::SequenceNumber,
-    stable_hash::{trim_zeros, StableHash, StableHasher},
-    AsBytes,
-};
+pub(crate) use crate::{stable_hash::trim_zeros, AsBytes};
+
+pub use crate::sequence_number::SequenceNumber;
+pub use crate::{StableHash, StableHasher};
