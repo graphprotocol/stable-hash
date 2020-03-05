@@ -1,4 +1,4 @@
-use {crate::prelude::*, std::borrow::Borrow as _, std::hash::Hasher, std::ops::BitXorAssign};
+use {crate::prelude::*, std::ops::BitXorAssign};
 
 /// Like Hasher, but consistent across:
 /// * builds (independent of rustc version or std implementation details)
@@ -20,35 +20,4 @@ pub trait StableHasher: Default {
 /// This is not a cryptographic strength digest.
 pub trait StableHash {
     fn stable_hash(&self, sequence_number: impl SequenceNumber, state: &mut impl StableHasher);
-}
-
-/// Wraps a Hasher to implement StableHasher. It must be known that the Hasher behaves in
-/// a consistent manner regardless of platform or process.
-#[derive(Default)]
-pub struct StableHasherWrapper<T>(T);
-
-impl<T: Hasher + Default> StableHasherWrapper<T> {
-    pub fn new(inner: T) -> Self {
-        Self(inner)
-    }
-}
-
-impl<T: Hasher + Default> StableHasher for StableHasherWrapper<T> {
-    type Out = u64;
-    fn write(&mut self, sequence_number: impl SequenceNumber, bytes: &[u8]) {
-        let seq_no = sequence_number.rollup();
-        self.0.write(seq_no.borrow());
-        self.0.write(bytes);
-    }
-    fn finish(&self) -> Self::Out {
-        self.0.finish()
-    }
-}
-
-pub(crate) fn trim_zeros(bytes: &[u8]) -> &[u8] {
-    let mut end = bytes.len() - 1;
-    while end != 0 && bytes[end] == 0 {
-        end -= 1;
-    }
-    &bytes[0..=end]
 }

@@ -1,4 +1,7 @@
-use stable_hash::*;
+use stable_hash::prelude::*;
+use stable_hash::utils::*;
+use std::hash::Hasher as _;
+use twox_hash::XxHash64;
 mod common;
 
 struct One<T0> {
@@ -51,6 +54,36 @@ fn add_non_default_field() {
         two: "two",
     };
     not_equal!(one, two);
+}
+
+#[test]
+fn next_child_calls_do_not_affect_output() {
+    struct S0;
+    impl StableHash for S0 {
+        fn stable_hash(&self, sequence_number: impl SequenceNumber, state: &mut impl StableHasher) {
+            1u32.stable_hash(sequence_number, state);
+        }
+    }
+
+    struct S1;
+    impl StableHash for S1 {
+        fn stable_hash(
+            &self,
+            mut sequence_number: impl SequenceNumber,
+            state: &mut impl StableHasher,
+        ) {
+            0u32.stable_hash(sequence_number.next_child(), state);
+            1u32.stable_hash(sequence_number, state);
+        }
+    }
+
+    equal!(4850997937794257732; S0, S1);
+}
+
+#[test]
+fn defaults_are_non_emitting() {
+    let empty = XxHash64::default().finish();
+    equal!(empty; 0u32, false, Option::<bool>::None, 0i32, Vec::<String>::new(), "");
 }
 
 #[test]
