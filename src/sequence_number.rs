@@ -36,7 +36,7 @@ macro_rules! impl_sequence_no {
 
                 let rollup = (self.rollup * Wrapping($prime_mult)) + Wrapping(child as $T);
 
-                Self { rollup, child }
+                Self { rollup, child: 0 }
             }
 
             #[inline]

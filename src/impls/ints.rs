@@ -1,36 +1,16 @@
 use crate::prelude::*;
 
-struct Integer<T> {
-    is_negative: bool,
-    unsigned: T,
-}
-
 macro_rules! impl_int {
     ($P:ty, $N:ty) => {
-        impl StableHash for Integer<$P> {
-            fn stable_hash(
-                &self,
-                mut sequence_number: impl SequenceNumber,
-                state: &mut impl StableHasher,
-            ) {
-                self.is_negative
-                    .stable_hash(sequence_number.next_child(), state);
-                if self.unsigned != 0 {
-                    let bytes = self.unsigned.to_le_bytes();
-                    state.write(sequence_number, trim_zeros(&bytes));
-                }
-            }
-        }
-
         impl StableHash for $P {
             fn stable_hash(
                 &self,
                 sequence_number: impl SequenceNumber,
                 state: &mut impl StableHasher,
             ) {
-                Integer {
+                AsInt {
                     is_negative: false,
-                    unsigned: *self,
+                    little_endian: &self.to_le_bytes(),
                 }
                 .stable_hash(sequence_number, state)
             }
@@ -41,9 +21,9 @@ macro_rules! impl_int {
                 sequence_number: impl SequenceNumber,
                 state: &mut impl StableHasher,
             ) {
-                Integer {
-                    is_negative: *self < 0,
-                    unsigned: self.wrapping_abs() as $P,
+                AsInt {
+                    is_negative: self.is_negative(),
+                    little_endian: &self.wrapping_abs().to_le_bytes(),
                 }
                 .stable_hash(sequence_number, state)
             }
