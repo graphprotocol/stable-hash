@@ -20,6 +20,11 @@ pub struct SequenceNumberInt<T> {
 
 macro_rules! impl_sequence_no {
     ($T:ty, $size:expr, $prime_init:expr, $prime_mult:expr) => {
+        impl Default for SequenceNumberInt<$T> {
+            fn default() -> Self {
+                Self::root()
+            }
+        }
         impl SequenceNumber for SequenceNumberInt<$T> {
             type Rollup = [u8; $size];
             fn root() -> Self {
