@@ -58,7 +58,7 @@ pub fn stable_hash_with_hasher<T: std::hash::Hasher + Default, V: StableHash>(va
 /// Wraps a Hasher to implement StableHasher. It must be known that the Hasher behaves in
 /// a consistent manner regardless of platform or process.
 #[derive(Default)]
-struct StableHasherWrapper<T>(T);
+pub struct StableHasherWrapper<T>(T);
 
 impl<T: Hasher + Default> StableHasher for StableHasherWrapper<T> {
     type Out = u64;
