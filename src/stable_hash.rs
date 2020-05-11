@@ -1,14 +1,20 @@
-use {crate::prelude::*, std::ops::BitXorAssign};
+use crate::prelude::*;
+
+pub trait UnorderedAggregator<T> {
+    fn write(&mut self, value: impl StableHash, sequence_number: T);
+}
 
 /// Like Hasher, but consistent across:
 /// * builds (independent of rustc version or std implementation details)
 /// * platforms (eg: 32 bit & 64 bit, x68 and ARM)
 /// * processes (multiple runs of the same program)
-///
-/// This is not a cryptographic strength digest.
-pub trait StableHasher: Default {
-    type Out: BitXorAssign + StableHash + Default;
-    fn write(&mut self, sequence_number: impl SequenceNumber, bytes: &[u8]);
+pub trait StableHasher {
+    type Out;
+    type Seq: SequenceNumber;
+    type Unordered: UnorderedAggregator<Self::Seq>;
+    fn write(&mut self, sequence_number: Self::Seq, bytes: &[u8]);
+    fn start_unordered(&mut self) -> Self::Unordered;
+    fn finish_unordered(&mut self, unordered: Self::Unordered, sequence_number: Self::Seq);
     fn finish(&self) -> Self::Out;
 }
 
@@ -16,8 +22,6 @@ pub trait StableHasher: Default {
 /// * builds (independent of rustc version or std implementation details)
 /// * platforms (eg: 32 bit & 64 bit, x68 and ARM)
 /// * processes (multiple runs of the same program)
-///
-/// This is not a cryptographic strength digest.
 pub trait StableHash {
-    fn stable_hash(&self, sequence_number: impl SequenceNumber, state: &mut impl StableHasher);
+    fn stable_hash<H: StableHasher>(&self, sequence_number: H::Seq, state: &mut H);
 }

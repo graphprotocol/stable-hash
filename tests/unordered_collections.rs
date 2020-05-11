@@ -29,7 +29,7 @@ macro_rules! set(
 #[test]
 fn hash_map_eq() {
     equal!(
-        5555886761104914033;
+        13674932384445014398, "d4a9efb21dceee110e3fd411be17dc746d9bea6964c38837249b34b18aeddbc3";
         map!{ 1 => "one", 2 => "two", 3 => "three" },
         map!{ 3 => "three", 1 => "one", 2 => "two" }
     );
@@ -62,7 +62,7 @@ fn hash_map_ne_value() {
 #[test]
 fn hash_set_eq() {
     equal!(
-        17027054512634741606;
+        9210742648026089892, "8a04398787dba3aa0969241e5a63af434173ec7ee3048f80479cc321fbc7d194";
         set!{1, 2, 3},
         set!{3, 2, 1}
     );
