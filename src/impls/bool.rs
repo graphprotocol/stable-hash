@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 impl StableHash for bool {
-    fn stable_hash(&self, sequence_number: impl SequenceNumber, state: &mut impl StableHasher) {
+    fn stable_hash<H: StableHasher>(&self, sequence_number: H::Seq, state: &mut H) {
         if *self {
             state.write(sequence_number, &[]);
         }

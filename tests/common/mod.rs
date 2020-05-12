@@ -1,3 +1,5 @@
+use rustc_hex::ToHex;
+use stable_hash::crypto::SetHasher;
 use stable_hash::*;
 use twox_hash::XxHash64;
 
@@ -5,11 +7,17 @@ pub fn xxhash(value: &impl StableHash) -> u64 {
     utils::stable_hash_with_hasher::<XxHash64, _>(value)
 }
 
+pub fn crypto_hash(value: &impl StableHash) -> String {
+    let raw = utils::stable_hash::<SetHasher, _>(value);
+    raw.to_hex()
+}
+
 #[macro_export]
 macro_rules! equal {
-    ($value:expr; $($data:expr),+) => {
+    ($value_xx:expr, $value_crypto:expr; $($data:expr),+) => {
         $(
-            assert_eq!(common::xxhash(&$data), $value);
+            assert_eq!(common::xxhash(&$data), $value_xx);
+            assert_eq!(&common::crypto_hash(&$data), $value_crypto);
         )+
     }
 }
@@ -17,6 +25,9 @@ macro_rules! equal {
 #[macro_export]
 macro_rules! not_equal {
     ($left:expr, $right:expr) => {
-        assert_ne!(common::xxhash(&$left), common::xxhash(&$right));
+        assert!(
+            common::xxhash(&$left) != common::xxhash(&$right)
+                && common::crypto_hash(&$left) != common::crypto_hash(&$right)
+        );
     };
 }

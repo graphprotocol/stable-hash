@@ -3,11 +3,7 @@ use crate::prelude::*;
 macro_rules! impl_int {
     ($P:ty, $N:ty) => {
         impl StableHash for $P {
-            fn stable_hash(
-                &self,
-                sequence_number: impl SequenceNumber,
-                state: &mut impl StableHasher,
-            ) {
+            fn stable_hash<H: StableHasher>(&self, sequence_number: H::Seq, state: &mut H) {
                 AsInt {
                     is_negative: false,
                     little_endian: &self.to_le_bytes(),
@@ -16,11 +12,7 @@ macro_rules! impl_int {
             }
         }
         impl StableHash for $N {
-            fn stable_hash(
-                &self,
-                sequence_number: impl SequenceNumber,
-                state: &mut impl StableHasher,
-            ) {
+            fn stable_hash<H: StableHasher>(&self, sequence_number: H::Seq, state: &mut H) {
                 AsInt {
                     is_negative: self.is_negative(),
                     little_endian: &self.wrapping_abs().to_le_bytes(),

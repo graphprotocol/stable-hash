@@ -1,3 +1,4 @@
+pub mod crypto;
 mod impls;
 pub mod prelude;
 mod sequence_number;

@@ -1,7 +1,9 @@
 use crate::prelude::*;
+use crate::sequence_number::UInt;
 use crate::SequenceNumberInt;
 use std::borrow::Borrow as _;
 use std::hash::Hasher;
+use std::marker::PhantomData;
 
 /// Treat some &[u8] as a sequence of bytes, rather than a sequence of numbers.
 /// Using this can result in a significant performance gain but does not support
@@ -9,7 +11,7 @@ use std::hash::Hasher;
 pub struct AsBytes<'a>(pub &'a [u8]);
 
 impl StableHash for AsBytes<'_> {
-    fn stable_hash(&self, sequence_number: impl SequenceNumber, state: &mut impl StableHasher) {
+    fn stable_hash<H: StableHasher>(&self, sequence_number: H::Seq, state: &mut H) {
         if !self.0.is_empty() {
             state.write(sequence_number, self.0)
         }
@@ -35,7 +37,7 @@ pub struct AsInt<'a> {
 }
 
 impl StableHash for AsInt<'_> {
-    fn stable_hash(&self, mut sequence_number: impl SequenceNumber, state: &mut impl StableHasher) {
+    fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Seq, state: &mut H) {
         self.is_negative
             .stable_hash(sequence_number.next_child(), state);
         let canon = trim_zeros(self.little_endian);
@@ -45,29 +47,62 @@ impl StableHash for AsInt<'_> {
     }
 }
 
-pub fn stable_hash<T: StableHasher, S: SequenceNumber, V: StableHash>(value: &V) -> T::Out {
-    let mut hasher = T::default();
-    value.stable_hash(S::root(), &mut hasher);
+pub fn stable_hash<H: StableHasher + Default, T: StableHash>(value: &T) -> H::Out {
+    let mut hasher = H::default();
+    value.stable_hash(H::Seq::root(), &mut hasher);
     hasher.finish()
 }
 
 pub fn stable_hash_with_hasher<T: std::hash::Hasher + Default, V: StableHash>(value: &V) -> u64 {
-    stable_hash::<StableHasherWrapper<T>, SequenceNumberInt<u64>, _>(value)
+    stable_hash::<StableHasherWrapper<T, SequenceNumberInt<u64>>, _>(value)
 }
 
 /// Wraps a Hasher to implement StableHasher. It must be known that the Hasher behaves in
 /// a consistent manner regardless of platform or process.
 #[derive(Default)]
-pub struct StableHasherWrapper<T>(T);
+pub struct StableHasherWrapper<H, Seq> {
+    hasher: H,
+    _marker: PhantomData<*const Seq>,
+}
 
-impl<T: Hasher + Default> StableHasher for StableHasherWrapper<T> {
+pub struct XorAggregator<T> {
+    value: u64,
+    _marker: PhantomData<*const T>,
+}
+
+impl<H: Hasher + Default, I: UInt> crate::stable_hash::UnorderedAggregator<SequenceNumberInt<I>>
+    for XorAggregator<StableHasherWrapper<H, SequenceNumberInt<I>>>
+{
+    fn write(&mut self, value: impl StableHash, sequence_number: SequenceNumberInt<I>) {
+        let mut hasher: StableHasherWrapper<H, SequenceNumberInt<I>> = Default::default();
+        value.stable_hash(sequence_number, &mut hasher);
+        self.value ^= hasher.finish();
+    }
+}
+
+impl<H: Hasher + Default, I: UInt> StableHasher for StableHasherWrapper<H, SequenceNumberInt<I>> {
     type Out = u64;
-    fn write(&mut self, sequence_number: impl SequenceNumber, bytes: &[u8]) {
-        let seq_no = sequence_number.rollup();
-        self.0.write(seq_no.borrow());
-        self.0.write(bytes);
+    type Seq = SequenceNumberInt<I>;
+    type Unordered = XorAggregator<Self>;
+    fn start_unordered(&mut self) -> Self::Unordered {
+        XorAggregator {
+            value: 0,
+            _marker: PhantomData,
+        }
+    }
+    fn finish_unordered(
+        &mut self,
+        unordered: Self::Unordered,
+        sequence_number: SequenceNumberInt<I>,
+    ) {
+        unordered.value.stable_hash(sequence_number, self);
+    }
+    fn write(&mut self, sequence_number: Self::Seq, bytes: &[u8]) {
+        let seq_no = sequence_number.rollup().to_le_bytes();
+        self.hasher.write(seq_no.borrow());
+        self.hasher.write(bytes);
     }
     fn finish(&self) -> Self::Out {
-        self.0.finish()
+        self.hasher.finish()
     }
 }

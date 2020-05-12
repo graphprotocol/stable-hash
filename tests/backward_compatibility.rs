@@ -1,15 +1,17 @@
+use stable_hash::crypto::SetHasher;
 use stable_hash::prelude::*;
 use stable_hash::utils::*;
 use std::hash::Hasher as _;
 use twox_hash::XxHash64;
 mod common;
+use rustc_hex::ToHex;
 
 struct One<T0> {
     one: T0,
 }
 
 impl<T0: StableHash> StableHash for One<T0> {
-    fn stable_hash(&self, mut sequence_number: impl SequenceNumber, state: &mut impl StableHasher) {
+    fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Seq, state: &mut H) {
         self.one.stable_hash(sequence_number.next_child(), state);
     }
 }
@@ -20,7 +22,7 @@ struct Two<T0, T1> {
 }
 
 impl<T0: StableHash, T1: StableHash> StableHash for Two<T0, T1> {
-    fn stable_hash(&self, mut sequence_number: impl SequenceNumber, state: &mut impl StableHasher) {
+    fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Seq, state: &mut H) {
         self.one.stable_hash(sequence_number.next_child(), state);
         self.two.stable_hash(sequence_number.next_child(), state);
     }
@@ -33,7 +35,7 @@ fn add_optional_field() {
         one: 5u32,
         two: Option::<u32>::None,
     };
-    equal!(7505743411322483516; one, two);
+    equal!(7505743411322483516, "3428a4134bfdac56aa04614504705b0ffd1d48f27777b109a793e5a641324212"; one, two);
 }
 
 #[test]
@@ -43,7 +45,7 @@ fn add_default_field() {
         one: "one",
         two: "",
     };
-    equal!(10092156604856295746; one, two);
+    equal!(10092156604856295746, "65bf96c193b5d365191b86da83097939ccd67ac226d9f3a3c991719e338de7ed"; one, two);
 }
 
 #[test]
@@ -60,30 +62,27 @@ fn add_non_default_field() {
 fn next_child_calls_do_not_affect_output() {
     struct S0;
     impl StableHash for S0 {
-        fn stable_hash(&self, sequence_number: impl SequenceNumber, state: &mut impl StableHasher) {
+        fn stable_hash<H: StableHasher>(&self, sequence_number: H::Seq, state: &mut H) {
             1u32.stable_hash(sequence_number, state);
         }
     }
 
     struct S1;
     impl StableHash for S1 {
-        fn stable_hash(
-            &self,
-            mut sequence_number: impl SequenceNumber,
-            state: &mut impl StableHasher,
-        ) {
+        fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Seq, state: &mut H) {
             0u32.stable_hash(sequence_number.next_child(), state);
             1u32.stable_hash(sequence_number, state);
         }
     }
 
-    equal!(4850997937794257732; S0, S1);
+    equal!(4850997937794257732, "044100289e98a89ed394a64fec6960dbab147ca5b6560883c9ce5d65cd69bf51"; S0, S1);
 }
 
 #[test]
 fn defaults_are_non_emitting() {
-    let empty = XxHash64::default().finish();
-    equal!(empty; 0u32, false, Option::<bool>::None, 0i32, Vec::<String>::new(), "");
+    let empty_1 = XxHash64::default().finish();
+    let empty_2: String = SetHasher::default().finish().to_hex();
+    equal!(empty_1, &empty_2; false, Option::<bool>::None, 0i32, Vec::<String>::new(), "");
 }
 
 #[test]
@@ -103,7 +102,7 @@ fn empty_vec_is_default() {
         one: true,
         two: Vec::<u32>::new(),
     };
-    equal!(13575479216228042845; one, two);
+    equal!(13575479216228042845, "db4657c873e33a60e581eb5458aba6c76f510e023872c76a3134608619342c59"; one, two);
 }
 
 #[test]
@@ -124,13 +123,16 @@ fn omitted_defaults_dont_collide() {
 #[test]
 fn as_bytes() {
     let v = vec![0u8];
-    not_equal!(&v[..], AsBytes(&v[..]))
+    not_equal!(&v[..], AsBytes(&v[..]));
+
+    let v = vec![1u8, 2u8];
+    not_equal!(&v[..], AsBytes(&v[..]));
 }
 
 #[test]
 fn numbers_through_vec() {
     equal!(
-        16256940196889123120;
+        16256940196889123120, "25dfaa9f92a3f2b05a1bdfbc66ec594c545dc39ebdb0e9ae769350ea1726e2b7";
         vec![1u32, 2u32],
         vec![1u16, 2u16]
     );
