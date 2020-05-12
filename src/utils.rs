@@ -67,7 +67,7 @@ pub struct StableHasherWrapper<H, Seq> {
 
 pub struct XorAggregator<T> {
     value: u64,
-    _marker: std::marker::PhantomData<*const T>,
+    _marker: PhantomData<*const T>,
 }
 
 impl<H: Hasher + Default, I: UInt> crate::stable_hash::UnorderedAggregator<SequenceNumberInt<I>>

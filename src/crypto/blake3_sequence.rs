@@ -16,7 +16,7 @@ impl SequenceNumber for Blake3SeqNo {
     fn root() -> Self {
         Self {
             hasher: Hasher::new(),
-            child: unsafe { NonZeroUsize::new_unchecked(1) },
+            child: NonZeroUsize::new(1).unwrap(),
         }
     }
     fn next_child(&mut self) -> Self {
@@ -28,7 +28,7 @@ impl SequenceNumber for Blake3SeqNo {
         write_varint(&mut hasher, child.get().try_into().unwrap()).unwrap();
         Self {
             hasher,
-            child: unsafe { NonZeroUsize::new_unchecked(1) },
+            child: NonZeroUsize::new(1).unwrap(),
         }
     }
     #[inline]
