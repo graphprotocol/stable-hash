@@ -63,7 +63,9 @@ impl SetHasher {
 impl UnorderedAggregator<Blake3SeqNo> for SetHasher {
     #[inline]
     fn write(&mut self, value: impl StableHash, sequence_number: Blake3SeqNo) {
-        value.stable_hash(sequence_number, self)
+        // Add the hash of the value to the set.
+        let hash = crate::utils::stable_hash::<Self, _>(&value);
+        StableHasher::write(self, sequence_number, &hash);
     }
 }
 
