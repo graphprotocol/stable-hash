@@ -1,4 +1,3 @@
-use rustc_hex::ToHex;
 use stable_hash::crypto::SetHasher;
 use stable_hash::*;
 use twox_hash::XxHash64;
@@ -9,7 +8,7 @@ pub fn xxhash(value: &impl StableHash) -> u64 {
 
 pub fn crypto_hash(value: &impl StableHash) -> String {
     let raw = utils::stable_hash::<SetHasher, _>(value);
-    raw.to_hex()
+    hex::encode(raw)
 }
 
 #[macro_export]

@@ -40,6 +40,21 @@ impl SequenceNumber for Blake3SeqNo {
 impl Blake3SeqNo {
     pub(crate) fn finish(self, payload: &[u8]) -> OutputReader {
         let Self { mut hasher, .. } = self;
+
+        // To debug all the payloads in a hash to find a diff, this can be useful.
+        /*
+        #[derive(Debug)]
+        struct Update {
+            payload: String,
+            seq_no: String,
+        }
+        let update = Update {
+            seq_no: hex::encode(hasher.finalize().as_bytes()),
+            payload: hex::encode(payload),
+        };
+        dbg!(update);
+        */
+
         // See also 91e48829-7bea-4426-971a-f092856269a5
         hasher.update(&[0]);
         hasher.update(payload);
