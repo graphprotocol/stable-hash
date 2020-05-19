@@ -4,7 +4,6 @@ use stable_hash::utils::*;
 use std::hash::Hasher as _;
 use twox_hash::XxHash64;
 mod common;
-use rustc_hex::ToHex;
 
 struct One<T0> {
     one: T0,
@@ -59,29 +58,9 @@ fn add_non_default_field() {
 }
 
 #[test]
-fn next_child_calls_do_not_affect_output() {
-    struct S0;
-    impl StableHash for S0 {
-        fn stable_hash<H: StableHasher>(&self, sequence_number: H::Seq, state: &mut H) {
-            1u32.stable_hash(sequence_number, state);
-        }
-    }
-
-    struct S1;
-    impl StableHash for S1 {
-        fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Seq, state: &mut H) {
-            0u32.stable_hash(sequence_number.next_child(), state);
-            1u32.stable_hash(sequence_number, state);
-        }
-    }
-
-    equal!(4850997937794257732, "044100289e98a89ed394a64fec6960dbab147ca5b6560883c9ce5d65cd69bf51"; S0, S1);
-}
-
-#[test]
 fn defaults_are_non_emitting() {
     let empty_1 = XxHash64::default().finish();
-    let empty_2: String = SetHasher::default().finish().to_hex();
+    let empty_2: String = hex::encode(SetHasher::default().finish());
     equal!(empty_1, &empty_2; false, Option::<bool>::None, 0i32, Vec::<String>::new(), "");
 }
 
