@@ -12,6 +12,8 @@ pub struct AsBytes<'a>(pub &'a [u8]);
 
 impl StableHash for AsBytes<'_> {
     fn stable_hash<H: StableHasher>(&self, sequence_number: H::Seq, state: &mut H) {
+        profile_method!(stable_hash);
+
         if !self.0.is_empty() {
             state.write(sequence_number, self.0)
         }
@@ -19,6 +21,8 @@ impl StableHash for AsBytes<'_> {
 }
 
 fn trim_zeros(bytes: &[u8]) -> &[u8] {
+    profile_fn!(trim_zeros);
+
     let mut end = bytes.len();
     while end != 0 && bytes[end - 1] == 0 {
         end -= 1;
@@ -38,6 +42,8 @@ pub struct AsInt<'a> {
 
 impl StableHash for AsInt<'_> {
     fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Seq, state: &mut H) {
+        profile_method!(stable_hash);
+
         self.is_negative
             .stable_hash(sequence_number.next_child(), state);
         let canon = trim_zeros(self.little_endian);
@@ -48,12 +54,16 @@ impl StableHash for AsInt<'_> {
 }
 
 pub fn stable_hash<H: StableHasher + Default, T: StableHash>(value: &T) -> H::Out {
+    profile_fn!(stable_hash);
+
     let mut hasher = H::default();
     value.stable_hash(H::Seq::root(), &mut hasher);
     hasher.finish()
 }
 
 pub fn stable_hash_with_hasher<T: std::hash::Hasher + Default, V: StableHash>(value: &V) -> u64 {
+    profile_fn!(stable_hash_with_hasher);
+
     stable_hash::<StableHasherWrapper<T, SequenceNumberInt<u64>>, _>(value)
 }
 
@@ -74,6 +84,8 @@ impl<H: Hasher + Default, I: UInt> crate::stable_hash::UnorderedAggregator<Seque
     for XorAggregator<StableHasherWrapper<H, SequenceNumberInt<I>>>
 {
     fn write(&mut self, value: impl StableHash, sequence_number: SequenceNumberInt<I>) {
+        profile_method!(write);
+
         let mut hasher: StableHasherWrapper<H, SequenceNumberInt<I>> = Default::default();
         value.stable_hash(sequence_number, &mut hasher);
         self.value ^= hasher.finish();
@@ -95,14 +107,20 @@ impl<H: Hasher + Default, I: UInt> StableHasher for StableHasherWrapper<H, Seque
         unordered: Self::Unordered,
         sequence_number: SequenceNumberInt<I>,
     ) {
+        profile_method!(finish_unordered);
+
         unordered.value.stable_hash(sequence_number, self);
     }
     fn write(&mut self, sequence_number: Self::Seq, bytes: &[u8]) {
+        profile_method!(write);
+
         let seq_no = sequence_number.rollup().to_le_bytes();
         self.hasher.write(seq_no.borrow());
         self.hasher.write(bytes);
     }
     fn finish(&self) -> Self::Out {
+        profile_method!(finish);
+
         self.hasher.finish()
     }
 }

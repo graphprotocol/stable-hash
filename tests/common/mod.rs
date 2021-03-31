@@ -1,12 +1,17 @@
+use firestorm::profile_fn;
 use stable_hash::crypto::SetHasher;
 use stable_hash::*;
 use twox_hash::XxHash64;
 
 pub fn xxhash(value: &impl StableHash) -> u64 {
+    profile_fn!(xxhash);
+
     utils::stable_hash_with_hasher::<XxHash64, _>(value)
 }
 
 pub fn crypto_hash(value: &impl StableHash) -> String {
+    profile_fn!(crypto_hash);
+
     let raw = utils::stable_hash::<SetHasher, _>(value);
     hex::encode(raw)
 }

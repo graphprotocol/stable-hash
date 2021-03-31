@@ -1,3 +1,4 @@
+use crate::prelude::*;
 use std::borrow::Borrow;
 use std::convert::{TryFrom, TryInto};
 
@@ -29,11 +30,14 @@ pub struct SequenceNumberInt<T> {
 impl<T: UInt> Default for SequenceNumberInt<T> {
     #[inline(always)]
     fn default() -> Self {
+        profile_method!(default);
+
         Self::root()
     }
 }
 
 impl<T: UInt> SequenceNumberInt<T> {
+    #[inline]
     pub fn rollup(&self) -> T {
         self.rollup
     }
@@ -48,6 +52,8 @@ impl<T: UInt> SequenceNumber for SequenceNumberInt<T> {
     }
     #[inline]
     fn next_child(&mut self) -> Self {
+        profile_method!(next_child);
+
         let child = self.child;
         self.child += 1;
 
