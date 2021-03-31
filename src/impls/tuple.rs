@@ -5,6 +5,8 @@ macro_rules! impl_tuple {
         impl<$($T : StableHash,)*> StableHash for ($($T,)*) {
             #[allow(non_snake_case)]
             fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Seq, state: &mut H) {
+                profile_method!(stable_hash);
+
                 let ($($T,)*) = self;
 
                 $(

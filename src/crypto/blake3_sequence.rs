@@ -14,12 +14,16 @@ pub struct Blake3SeqNo {
 
 impl SequenceNumber for Blake3SeqNo {
     fn root() -> Self {
+        profile_method!(root);
+
         Self {
             hasher: Hasher::new(),
             child: NonZeroUsize::new(1).unwrap(),
         }
     }
     fn next_child(&mut self) -> Self {
+        profile_method!(next_child);
+
         let child = self.child;
         let mut hasher = self.hasher.clone();
         // Better to panic than overflow.
@@ -33,12 +37,16 @@ impl SequenceNumber for Blake3SeqNo {
     }
     #[inline]
     fn skip(&mut self, count: usize) {
+        profile_method!(skip);
+
         self.child = NonZeroUsize::new(self.child.get() + count).unwrap();
     }
 }
 
 impl Blake3SeqNo {
     pub(crate) fn finish(self, payload: &[u8]) -> OutputReader {
+        profile_method!(finish);
+
         let Self { mut hasher, .. } = self;
 
         // To debug all the payloads in a hash to find a diff, this can be useful.

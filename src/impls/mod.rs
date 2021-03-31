@@ -16,6 +16,8 @@ pub(self) fn unordered_unique_stable_hash<H: StableHasher>(
     mut sequence_number: H::Seq,
     state: &mut H,
 ) {
+    profile_fn!(unordered_unique_stable_hash);
+
     // First, create child nodes for each element.
     // Doing this here removes any opportunity for collisions
     let rollup_seq_no = sequence_number.next_child();
@@ -35,6 +37,8 @@ pub(self) fn unordered_unique_stable_hash<H: StableHasher>(
 impl<'a, T: StableHash> StableHash for &'a T {
     #[inline]
     fn stable_hash<H: StableHasher>(&self, sequence_number: H::Seq, state: &mut H) {
+        profile_method!(stable_hash);
+
         (*self).stable_hash(sequence_number, state)
     }
 }

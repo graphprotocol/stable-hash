@@ -9,8 +9,9 @@ edition = "2018"
 blake3 = "0.3.3"
 num-traits = "0.2.11"
 leb128 = "0.2.4"
-num-bigint = "0.2.6"
+ibig = "0.3.0"
 lazy_static = "1.4.0"
+firestorm = "0.4.6" 
 
 [dev-dependencies]
 twox-hash = "1.5.0"
