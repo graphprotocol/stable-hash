@@ -1,6 +1,6 @@
 [package]
 name = "stable-hash"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Zac Burns <That3Percent@gmail.com>"]
 edition = "2018"
 
@@ -9,7 +9,7 @@ edition = "2018"
 blake3 = "0.3.3"
 num-traits = "0.2.11"
 leb128 = "0.2.4"
-ibig = "0.3.0"
+ibig = "0.3.1"
 lazy_static = "1.4.0"
 firestorm = "0.4.6" 
 
