@@ -7,6 +7,14 @@ use lazy_static::lazy_static;
 use num_traits::identities::One;
 use std::default::Default;
 
+// TODO: Consider using a Solinas prime
+/*
+From Jackson:
+    In particular we could change the prime to be a Solinas prime.
+    If we implement the algorithm for fast modular multiplication around a solinas prime then we get a big speed up.
+    So the changes would be just change the public parameter prime in the codebase, and don’t just naively multiply and reduce, but write the algorithm to take advantage of the structure inherent in Solinas primes
+    (they are prime numbers that have really low hamming weights, a sort of generalization of Mersenne primes — and so computers love these numbers)
+*/
 lazy_static! {
     static ref P: UBig = "50763434429823703141085322590076158163032399096130816327134180611270739679038131809123861970975131471260684737408234060876742190838745219274061025048845231234136148410311444604554192918702297959809128216170781389312847013812749872750274650041183009144583521632294518996531883338553737214586176414455965584933129379474747808392433032576309945590584603359054260866543918929486383805924215982747035136255123252119828736134723149397165643360162699752374292974151421555939481822911026769138419707577501643119472226283015793622652706604535623136902831581637275314074553942039263472515423713366344495524733341031029964603383".parse().unwrap();
 }
@@ -31,7 +39,6 @@ pub struct SetHasher {
 
 impl Default for SetHasher {
     fn default() -> Self {
-
         Self { value: UBig::one() }
     }
 }
@@ -44,8 +51,8 @@ impl SetHasher {
         Default::default()
     }
     #[inline]
-    fn mixin(&mut self, digits: &UBig) {
-        profile_method!(mixin);
+    fn mixin_raw(&mut self, digits: &UBig) {
+        profile_method!(mixin_raw);
 
         self.value *= digits;
         self.value %= &*P;
@@ -79,10 +86,19 @@ impl UnorderedAggregator<Blake3SeqNo> for SetHasher {
     }
 }
 
+// TODO: Should we consider doing this differently w/ const generics?
+// Unfortunately we would want specialization to do this.
+// TODO: Should we respect the rule about defaults not writing here?
+// I think we should not implement this and instead require that the Finalized type be coercible to bytes.
+impl StableHash for [u8; 32] {
+    fn stable_hash<H: StableHasher>(&self, sequence_number: H::Seq, state: &mut H) {
+        state.write(sequence_number, self);
+    }
+}
+
 impl StableHasher for SetHasher {
     type Out = [u8; 32];
     type Seq = Blake3SeqNo;
-    type Unordered = Self;
 
     fn write(&mut self, sequence_number: Self::Seq, bytes: &[u8]) {
         profile_method!(write);
@@ -94,21 +110,7 @@ impl StableHasher for SetHasher {
         let mut digits = [0u8; 256];
         output.fill(&mut digits);
         let digits = UBig::from_le_bytes(&digits);
-        self.mixin(&digits)
-    }
-
-    #[inline]
-    fn start_unordered(&mut self) -> Self::Unordered {
-        profile_method!(start_unordered);
-
-        Self::new()
-    }
-
-    #[inline]
-    fn finish_unordered(&mut self, unordered: Self::Unordered, _sequence_number: Self::Seq) {
-        profile_method!(finish_unordered);
-
-        self.mixin(&unordered.value)
+        self.mixin_raw(&digits)
     }
 
     fn finish(&self) -> Self::Out {

@@ -1,6 +1,6 @@
 [package]
 name = "stable-hash"
-version = "0.3.1"
+version = "0.4.0"
 authors = ["Zac Burns <That3Percent@gmail.com>"]
 edition = "2018"
 
@@ -16,3 +16,4 @@ firestorm = "0.4.6"
 [dev-dependencies]
 twox-hash = "1.5.0"
 hex = "0.4.2"
+rand = "0.8.4"

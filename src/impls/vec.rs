@@ -15,6 +15,5 @@ impl<'a, T: StableHash> StableHash for &'a [T] {
         for item in self.iter() {
             item.stable_hash(sequence_number.next_child(), state);
         }
-        self.len().stable_hash(sequence_number, state);
     }
 }
