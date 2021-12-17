@@ -70,57 +70,31 @@ pub fn stable_hash_with_hasher<T: std::hash::Hasher + Default, V: StableHash>(va
 /// Wraps a Hasher to implement StableHasher. It must be known that the Hasher behaves in
 /// a consistent manner regardless of platform or process.
 #[derive(Default)]
-pub struct StableHasherWrapper<H, Seq> {
-    hasher: H,
-    _marker: PhantomData<*const Seq>,
-}
-
-pub struct XorAggregator<T> {
-    value: u64,
-    _marker: PhantomData<*const T>,
-}
-
-impl<H: Hasher + Default, I: UInt> crate::stable_hash::UnorderedAggregator<SequenceNumberInt<I>>
-    for XorAggregator<StableHasherWrapper<H, SequenceNumberInt<I>>>
-{
-    fn write(&mut self, value: impl StableHash, sequence_number: SequenceNumberInt<I>) {
-        profile_method!(write);
-
-        let mut hasher: StableHasherWrapper<H, SequenceNumberInt<I>> = Default::default();
-        value.stable_hash(sequence_number, &mut hasher);
-        self.value ^= hasher.finish();
-    }
+pub struct StableHasherWrapper<H, Seq = u64> {
+    mixer: FldMix,
+    _marker: PhantomData<*const (Seq, H)>,
 }
 
 impl<H: Hasher + Default, I: UInt> StableHasher for StableHasherWrapper<H, SequenceNumberInt<I>> {
     type Out = u64;
     type Seq = SequenceNumberInt<I>;
-    type Unordered = XorAggregator<Self>;
-    fn start_unordered(&mut self) -> Self::Unordered {
-        XorAggregator {
-            value: 0,
-            _marker: PhantomData,
-        }
-    }
-    fn finish_unordered(
-        &mut self,
-        unordered: Self::Unordered,
-        sequence_number: SequenceNumberInt<I>,
-    ) {
-        profile_method!(finish_unordered);
 
-        unordered.value.stable_hash(sequence_number, self);
-    }
     fn write(&mut self, sequence_number: Self::Seq, bytes: &[u8]) {
         profile_method!(write);
 
+        let mut hasher = H::default();
         let seq_no = sequence_number.rollup().to_le_bytes();
-        self.hasher.write(seq_no.borrow());
-        self.hasher.write(bytes);
+        hasher.write(seq_no.borrow());
+        hasher.write(bytes);
+
+        self.mixer.mix(hasher.finish());
     }
+
     fn finish(&self) -> Self::Out {
         profile_method!(finish);
 
-        self.hasher.finish()
+        let mut hasher = H::default();
+        hasher.write(&self.mixer.finalize().to_le_bytes());
+        hasher.finish()
     }
 }

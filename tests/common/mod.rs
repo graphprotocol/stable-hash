@@ -1,5 +1,9 @@
+use std::collections::{HashMap, HashSet};
+use std::hash::Hash;
+
 use firestorm::profile_fn;
 use stable_hash::crypto::SetHasher;
+use stable_hash::utils::stable_hash_with_hasher;
 use stable_hash::*;
 use twox_hash::XxHash64;
 
@@ -32,6 +36,6 @@ macro_rules! not_equal {
         assert!(
             common::xxhash(&$left) != common::xxhash(&$right)
                 && common::crypto_hash(&$left) != common::crypto_hash(&$right)
-        );
+        )
     };
 }

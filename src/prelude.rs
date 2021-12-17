@@ -1,3 +1,4 @@
+pub(crate) use crate::fld_mixer::FldMix;
 pub(crate) use crate::utils::*;
 pub(crate) use firestorm::{profile_fn, profile_method};
 
