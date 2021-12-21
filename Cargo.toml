@@ -4,6 +4,12 @@ version = "0.4.0"
 authors = ["Zac Burns <That3Percent@gmail.com>"]
 edition = "2018"
 
+[profile.release]
+debug = true
+lto = "thin"
+target-cpu = "native"
+
+
 [features]
 simd = ["packed_simd"]
 
@@ -22,3 +28,9 @@ packed_simd = { version = "0.3.6", package = "packed_simd_2", optional = true }
 twox-hash = "1.5.0"
 hex = "0.4.2"
 rand = { version = "0.8.4", features = ["small_rng"] }
+criterion = "0.3"
+
+
+[[bench]]
+name = "fld_mixer"
+harness = false

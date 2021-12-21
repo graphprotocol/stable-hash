@@ -1,3 +1,7 @@
+#[cfg(not(feature = "simd"))]
+use crate::fld_mixer::FldMixScalar;
+#[cfg(feature = "simd")]
+use crate::fld_mixer_simd::FldMixSimd;
 use crate::prelude::*;
 use crate::sequence_number::UInt;
 use crate::SequenceNumberInt;
@@ -64,18 +68,25 @@ pub fn stable_hash<H: StableHasher + Default, T: StableHash>(value: &T) -> H::Ou
 pub fn stable_hash_with_hasher<T: std::hash::Hasher + Default, V: StableHash>(value: &V) -> u64 {
     profile_fn!(stable_hash_with_hasher);
 
-    stable_hash::<StableHasherWrapper<T, SequenceNumberInt<u64>>, _>(value)
+    #[cfg(feature = "simd")]
+    type Mixer = FldMixSimd;
+    #[cfg(not(feature = "simd"))]
+    type Mixer = FldMixScalar;
+
+    stable_hash::<StableHasherWrapper<T, Mixer, SequenceNumberInt<u64>>, _>(value)
 }
 
 /// Wraps a Hasher to implement StableHasher. It must be known that the Hasher behaves in
 /// a consistent manner regardless of platform or process.
 #[derive(Default)]
-pub struct StableHasherWrapper<H, Seq = u64> {
-    mixer: FldMix,
+pub struct StableHasherWrapper<H, M: FldMix + Default, Seq = u64> {
+    mixer: M,
     _marker: PhantomData<*const (Seq, H)>,
 }
 
-impl<H: Hasher + Default, I: UInt> StableHasher for StableHasherWrapper<H, SequenceNumberInt<I>> {
+impl<H: Hasher + Default, M: FldMix + Default, I: UInt> StableHasher
+    for StableHasherWrapper<H, M, SequenceNumberInt<I>>
+{
     type Out = u64;
     type Seq = SequenceNumberInt<I>;
 

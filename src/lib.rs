@@ -1,7 +1,7 @@
 pub mod crypto;
-mod fld_mixer;
+pub mod fld_mixer;
 #[cfg(feature = "simd")]
-mod fld_mixer_simd;
+pub mod fld_mixer_simd;
 mod impls;
 pub mod prelude;
 mod sequence_number;

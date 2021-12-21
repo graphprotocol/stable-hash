@@ -13,10 +13,10 @@ pub(crate) type Accumulator = Wrapping<u128>;
 // Choose odd q, even r, and prefer large values with gcd(p, r) = 1
 // and pr = q(q-1).
 
-#[cfg(not(feature = "simd"))]
-pub type FldMix = FldMixScalar;
-#[cfg(feature = "simd")]
-pub type FldMix = super::fld_mixer_simd::FldMixSimd;
+pub trait FldMix {
+    fn mix(&mut self, value: u64);
+    fn finalize(&self) -> u128;
+}
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct FldMixScalar(Accumulator);
@@ -52,22 +52,22 @@ impl Default for FldMixScalar {
     }
 }
 
-impl FldMixScalar {
-    #[inline]
-    #[cfg(test)]
-    pub const fn new() -> Self {
-        Self(IDENTITY)
-    }
-
-    #[inline(always)]
-    fn u(x: Accumulator, y: Accumulator) -> Accumulator {
-        P + Q * (x + y) + R * x * y
-    }
-
-    pub fn mix(&mut self, other: u64) {
+impl FldMix for FldMixScalar {
+    fn mix(&mut self, other: u64) {
         let x = self.0;
         let y = Wrapping(other as u128);
         self.0 = Self::u(x, y);
+    }
+
+    fn finalize(&self) -> u128 {
+        self.0 .0
+    }
+}
+
+impl FldMixScalar {
+    #[inline(always)]
+    fn u(x: Accumulator, y: Accumulator) -> Accumulator {
+        P + Q * (x + y) + R * x * y
     }
 
     #[cfg(test)]
@@ -75,10 +75,6 @@ impl FldMixScalar {
         let x = self.0;
         let y = other.0;
         self.0 = Self::u(x, y);
-    }
-
-    pub fn finalize(&self) -> u128 {
-        self.0 .0
     }
 }
 
@@ -88,20 +84,20 @@ mod tests {
 
     #[test]
     fn mixme() {
-        let mut a = FldMixScalar::new();
+        let mut a = FldMixScalar::default();
         a.mix(100);
         a.mix(10);
         a.mix(999);
 
-        let mut b = FldMixScalar::new();
+        let mut b = FldMixScalar::default();
         b.mix(10);
         b.mix(999);
         b.mix(100);
 
         assert_eq!(a, b);
 
-        let mut c = FldMixScalar::new();
-        let mut d = FldMixScalar::new();
+        let mut c = FldMixScalar::default();
+        let mut d = FldMixScalar::default();
         c.mix(999);
         c.mix(10);
         d.mix(100);

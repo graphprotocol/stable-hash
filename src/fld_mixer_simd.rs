@@ -22,13 +22,8 @@ impl Default for FldMixSimd {
     }
 }
 
-impl FldMixSimd {
-    #[cfg(test)]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn mix(&mut self, other: u64) {
+impl FldMix for FldMixSimd {
+    fn mix(&mut self, other: u64) {
         self.buffer = unsafe { self.buffer.replace_unchecked(self.index, other as u128) };
         self.index += 1;
         if self.index == LANES {
@@ -36,6 +31,16 @@ impl FldMixSimd {
         }
     }
 
+    fn finalize(&self) -> u128 {
+        if self.index == 0 {
+            self.accumulator.0
+        } else {
+            self.mixed_buffer().0
+        }
+    }
+}
+
+impl FldMixSimd {
     #[inline(always)]
     fn mix_buffer(&mut self) {
         self.accumulator = self.mixed_buffer();
@@ -68,14 +73,6 @@ impl FldMixSimd {
         }
         x
     }
-
-    pub fn finalize(&self) -> u128 {
-        if self.index == 0 {
-            self.accumulator.0
-        } else {
-            self.mixed_buffer().0
-        }
-    }
 }
 
 #[cfg(test)]
@@ -84,8 +81,8 @@ mod tests {
     use rand::{rngs::SmallRng, thread_rng, RngCore as _, SeedableRng as _};
 
     fn test_mixer(inputs: &[u64]) {
-        let mut mixer = FldMixSimd::new();
-        let mut model = FldMix::new();
+        let mut mixer = FldMixSimd::default();
+        let mut model = FldMixScalar::default();
         for input in inputs {
             mixer.mix(*input);
             model.mix(*input);
