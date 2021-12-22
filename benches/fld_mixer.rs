@@ -7,18 +7,25 @@ use stable_hash::utils::StableHasherWrapper;
 use stable_hash::*;
 use twox_hash::XxHash64;
 
-fn bench_mixer<M: FldMix + Default>(inputs: &[u64]) -> u64 {
+fn bench_mixer<M: FldMix + Default>(inputs: &[u64]) -> u128 {
+    /*
     let mut hasher = StableHasherWrapper::<XxHash64, M, SequenceNumberInt<u64>>::default();
     for input in inputs {
         hasher.write(SequenceNumberInt::root(), &input.to_le_bytes());
     }
     hasher.finish()
+    */
+    let mut mixer = M::default();
+    for input in inputs {
+        mixer.mix(*input);
+    }
+    mixer.finalize()
 }
 
 fn bench_mixers(c: &mut Criterion) {
     let mut rng = SmallRng::from_rng(thread_rng()).unwrap();
     let mut inputs = black_box(Vec::new());
-    let n = 64;
+    let n = 1024;
     for _ in 0..n {
         inputs.push(rng.next_u64());
     }
