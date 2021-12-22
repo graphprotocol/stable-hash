@@ -6,12 +6,10 @@ edition = "2018"
 
 [profile.release]
 debug = true
-lto = "thin"
-target-cpu = "native"
 
 
 [features]
-simd = ["packed_simd"]
+simd = []
 
 
 [dependencies]
@@ -21,7 +19,6 @@ leb128 = "0.2.4"
 ibig = "0.3.1"
 lazy_static = "1.4.0"
 firestorm = "0.4.6"
-packed_simd = { version = "0.3.6", package = "packed_simd_2", optional = true }
 
 
 [dev-dependencies]

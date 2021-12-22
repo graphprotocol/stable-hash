@@ -1,22 +1,18 @@
 use super::fld_mixer::*;
-use packed_simd::u128x4;
 use std::num::Wrapping;
 
-const LANES: usize = 4;
-type Buffer = u128x4;
+const BUFFER: usize = 8;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FldMixSimd {
-    accumulator: Accumulator,
-    buffer: Buffer,
+    buffer: [(Accumulator, Accumulator); BUFFER],
     index: usize,
 }
 
 impl Default for FldMixSimd {
     fn default() -> Self {
         Self {
-            accumulator: IDENTITY,
-            buffer: Buffer::splat(0),
+            buffer: [(IDENTITY, IDENTITY); BUFFER],
             index: 0,
         }
     }
@@ -24,54 +20,39 @@ impl Default for FldMixSimd {
 
 impl FldMix for FldMixSimd {
     fn mix(&mut self, other: u64) {
-        self.buffer = unsafe { self.buffer.replace_unchecked(self.index, other as u128) };
+        self.buffer[self.index].1 = Wrapping(other as u128);
         self.index += 1;
-        if self.index == LANES {
-            self.mix_buffer();
+        if self.index == BUFFER {
+            for row in &mut self.buffer {
+                row.0 = Self::uv(row.0, row.1);
+            }
+            self.index = 0;
         }
     }
 
     fn finalize(&self) -> u128 {
-        if self.index == 0 {
-            self.accumulator.0
-        } else {
-            self.mixed_buffer().0
+        let mut x = IDENTITY;
+        for row in &self.buffer {
+            x = Self::uv(x, row.0);
         }
+        for i in 0..self.index {
+            x = Self::uv(x, self.buffer[i].1);
+        }
+        x.0
     }
 }
 
 impl FldMixSimd {
     #[inline(always)]
-    fn mix_buffer(&mut self) {
-        self.accumulator = self.mixed_buffer();
-        self.index = 0;
+    fn u(x: Accumulator, y: Accumulator) -> Accumulator {
+        P + Q * (x + y) + R * x * y
     }
 
-    /// The original mixing operation is `x' = P + Q(x + y) + Rxy`. To adapt this function for SIMD
-    /// with N lanes we extract the operations that have no data dependencies on the value of x. The
-    /// following is the vectorized form, where constants P, Q, and R are splatted vectors of those
-    /// constants, y is a vector containing N buffered values to mix, and x remains the scalar
-    /// accumulator.
-    /// ```
-    /// let a = y * R + Q;
-    /// let b = y * Q + P;
-    /// for i in 0..LANES { x = x * a[i] + b[i]; }
-    /// ```
     #[inline(always)]
-    fn mixed_buffer(&self) -> Accumulator {
-        let p = u128x4::splat(P.0);
-        let q = u128x4::splat(Q.0);
-        let r = u128x4::splat(R.0);
-        let y = self.buffer;
-        let a = r * y + q;
-        let b = q * y + p;
-        let mut x = self.accumulator;
-        for i in 0..self.index {
-            let a_i = Wrapping(unsafe { a.extract_unchecked(i) });
-            let b_i = Wrapping(unsafe { b.extract_unchecked(i) });
-            x = x * a_i + b_i;
-        }
-        x
+    fn uv(x: Accumulator, y: Accumulator) -> Accumulator {
+        let a = R * y + Q;
+        let b = Q * y + P;
+        x * a + b
     }
 }
 
@@ -94,7 +75,7 @@ mod tests {
     fn consistent_with_scalar_impl() {
         let mut rng = SmallRng::from_rng(thread_rng()).unwrap();
         let mut inputs = Vec::new();
-        for _ in 0..(LANES * 3) {
+        for _ in 0..(BUFFER * 3) {
             inputs.push(rng.next_u64());
         }
         for i in 0..inputs.len() {

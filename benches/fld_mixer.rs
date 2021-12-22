@@ -18,7 +18,7 @@ fn bench_mixer<M: FldMix + Default>(inputs: &[u64]) -> u64 {
 fn bench_mixers(c: &mut Criterion) {
     let mut rng = SmallRng::from_rng(thread_rng()).unwrap();
     let mut inputs = black_box(Vec::new());
-    let n = 10;
+    let n = 64;
     for _ in 0..n {
         inputs.push(rng.next_u64());
     }
