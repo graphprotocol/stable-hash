@@ -9,7 +9,7 @@ debug = true
 
 
 [features]
-simd = []
+simd = ["packed_simd"]
 
 
 [dependencies]
@@ -17,6 +17,7 @@ blake3 = "0.3.3"
 num-traits = "0.2.11"
 leb128 = "0.2.4"
 ibig = "0.3.1"
+packed_simd = { version = "0.3.6", package = "packed_simd_2", optional = true }
 lazy_static = "1.4.0"
 firestorm = "0.4.6"
 
