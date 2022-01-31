@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 impl<T: StableHash> StableHash for Option<T> {
-    fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Seq, state: &mut H) {
+    fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Addr, state: &mut H) {
         profile_method!(stable_hash);
 
         self.is_some()

@@ -1,17 +1,6 @@
 use crate::prelude::*;
-use std::borrow::Borrow;
-use std::convert::{TryFrom, TryInto};
 
-pub trait UInt: TryFrom<usize> + Copy {
-    type Bytes: Borrow<[u8]>;
-    fn prime_init() -> Self;
-    fn prime_mult() -> Self;
-    fn to_le_bytes(self) -> Self::Bytes;
-    fn wrapping_add(self, other: Self) -> Self;
-    fn wrapping_mul(self, other: Self) -> Self;
-}
-
-pub trait SequenceNumber: Clone {
+pub trait FieldAddress: Clone {
     fn root() -> Self;
     fn next_child(&mut self) -> Self;
     fn skip(&mut self, count: usize) {
@@ -21,13 +10,15 @@ pub trait SequenceNumber: Clone {
     }
 }
 
+// TODO: Bake this down to just u64 (not taking child)
 #[derive(Debug, Clone)]
-pub struct SequenceNumberInt<T> {
-    rollup: T,
+pub struct SequenceNumberInt {
+    rollup: u64,
     child: usize,
 }
 
-impl<T: UInt> Default for SequenceNumberInt<T> {
+// TODO: Remove this
+impl Default for SequenceNumberInt {
     #[inline(always)]
     fn default() -> Self {
         profile_method!(default);
@@ -36,17 +27,17 @@ impl<T: UInt> Default for SequenceNumberInt<T> {
     }
 }
 
-impl<T: UInt> SequenceNumberInt<T> {
+impl SequenceNumberInt {
     #[inline]
-    pub fn rollup(&self) -> T {
+    pub fn rollup(&self) -> u64 {
         self.rollup
     }
 }
 
-impl<T: UInt> SequenceNumber for SequenceNumberInt<T> {
+impl FieldAddress for SequenceNumberInt {
     fn root() -> Self {
         Self {
-            rollup: T::prime_init(),
+            rollup: 17,
             child: 0,
         }
     }
@@ -59,8 +50,8 @@ impl<T: UInt> SequenceNumber for SequenceNumberInt<T> {
 
         let rollup = self
             .rollup
-            .wrapping_mul(T::prime_mult())
-            .wrapping_add(child.try_into().unwrap_or_else(|_| panic!("Overflow")));
+            .wrapping_mul(486_187_739)
+            .wrapping_add(child as u64);
 
         Self { rollup, child: 0 }
     }
@@ -70,49 +61,17 @@ impl<T: UInt> SequenceNumber for SequenceNumberInt<T> {
     }
 }
 
-macro_rules! impl_sequence_no {
-    ($T:ty, $size:expr) => {
-        impl UInt for $T {
-            type Bytes = [u8; $size];
-            #[inline(always)]
-            fn prime_init() -> Self {
-                17
-            }
-            #[inline(always)]
-            fn prime_mult() -> Self {
-                486_187_739
-            }
-            #[inline(always)]
-            fn wrapping_add(self, other: Self) -> Self {
-                self.wrapping_add(other)
-            }
-            #[inline(always)]
-            fn wrapping_mul(self, other: Self) -> Self {
-                self.wrapping_mul(other)
-            }
-            #[inline(always)]
-            fn to_le_bytes(self) -> Self::Bytes {
-                self.to_le_bytes()
-            }
-        }
-    };
-}
-
-impl_sequence_no!(u64, 8);
-impl_sequence_no!(u32, 4);
-
 #[cfg(test)]
 mod test {
-    use super::{SequenceNumber, SequenceNumberInt, UInt};
+    use super::{FieldAddress, SequenceNumberInt};
 
     use std::collections::HashSet;
-    use std::hash::Hash;
 
-    fn recurse<T: Hash + Eq + UInt>(
-        mut sequence_number: SequenceNumberInt<T>,
+    fn recurse(
+        mut sequence_number: SequenceNumberInt,
         depth: usize,
         length: usize,
-        collector: &mut HashSet<T>,
+        collector: &mut HashSet<u64>,
     ) {
         // Struct/Recursion check
         for _ in 0..6 {
@@ -152,16 +111,7 @@ mod test {
     #[test]
     fn no_collisions_for_common_prototypes_64() {
         let mut collector = HashSet::new();
-        let root = SequenceNumberInt::<u64>::root();
-        collector.insert(root.rollup());
-        recurse(root, 4, 50, &mut collector);
-        assert_eq!(30831, collector.len());
-    }
-
-    #[test]
-    fn no_collisions_for_common_prototypes_32() {
-        let mut collector = HashSet::new();
-        let root = SequenceNumberInt::<u32>::root();
+        let root = SequenceNumberInt::root();
         collector.insert(root.rollup());
         recurse(root, 4, 50, &mut collector);
         assert_eq!(30831, collector.len());

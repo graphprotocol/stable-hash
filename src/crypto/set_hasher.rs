@@ -21,13 +21,13 @@ lazy_static! {
 
 /// Based on https://crypto.stackexchange.com/a/54546
 ///
-/// The idea here is to use the SequenceNumber to unambiguously identify each
+/// The idea here is to use the FieldAddress to unambiguously identify each
 /// field as within it's own database cell, and use an online order-independent
 /// aggregator of the cells to produce a final result.
 ///
 /// Within this framework a huge struct can be hashed incrementally or even in
 /// parallel as long as sequence numbers are deterministically produced to
-/// identify parts within the struct. Conveniently, the SequenceNumber::skip
+/// identify parts within the struct. Conveniently, the FieldAddress::skip
 /// method can be used to jump to parts of a vec or struct efficiently.
 pub struct SetHasher {
     // TODO: (Performance). We want an int 2056 + 2048 = 4104 bit int (u4160 if using a word size of 64 at 65 words)
@@ -85,14 +85,14 @@ impl UnorderedAggregator<Blake3SeqNo> for SetHasher {
 // TODO: Should we respect the rule about defaults not writing here?
 // I think we should not implement this and instead require that the Finalized type be coercible to bytes.
 impl StableHash for [u8; 32] {
-    fn stable_hash<H: StableHasher>(&self, sequence_number: H::Seq, state: &mut H) {
+    fn stable_hash<H: StableHasher>(&self, sequence_number: H::Addr, state: &mut H) {
         state.write(sequence_number, self);
     }
 }
 
 impl StableHasher for SetHasher {
     type Out = [u8; 32];
-    type Seq = Blake3SeqNo;
+    type Addr = Blake3SeqNo;
 
     #[inline]
     fn new() -> Self {
@@ -101,7 +101,7 @@ impl StableHasher for SetHasher {
         Default::default()
     }
 
-    fn write(&mut self, sequence_number: Self::Seq, bytes: &[u8]) {
+    fn write(&mut self, sequence_number: Self::Addr, bytes: &[u8]) {
         profile_method!(write);
 
         // Write the field into a database cell

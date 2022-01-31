@@ -12,7 +12,8 @@ pub struct Blake3SeqNo {
     child: NonZeroUsize,
 }
 
-impl SequenceNumber for Blake3SeqNo {
+// TODO: Rename Blake3SeqNo
+impl FieldAddress for Blake3SeqNo {
     fn root() -> Self {
         profile_method!(root);
 

@@ -8,7 +8,7 @@ struct One<T0> {
 }
 
 impl<T0: StableHash> StableHash for One<T0> {
-    fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Seq, state: &mut H) {
+    fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Addr, state: &mut H) {
         self.one.stable_hash(sequence_number.next_child(), state);
     }
 }
@@ -19,7 +19,7 @@ struct Two<T0, T1> {
 }
 
 impl<T0: StableHash, T1: StableHash> StableHash for Two<T0, T1> {
-    fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Seq, state: &mut H) {
+    fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Addr, state: &mut H) {
         self.one.stable_hash(sequence_number.next_child(), state);
         self.two.stable_hash(sequence_number.next_child(), state);
     }
