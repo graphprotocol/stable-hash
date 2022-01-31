@@ -1,15 +1,10 @@
 use crate::prelude::*;
 use blake3::{Hasher, OutputReader};
 use leb128::write::unsigned as write_varint;
-use std::convert::TryInto as _;
-use std::num::NonZeroUsize;
 
 #[derive(Clone)]
 pub struct Blake3SeqNo {
     hasher: Hasher,
-    // This has to be NonZero in order to be injective, since the payload marker writes 0
-    // See also 91e48829-7bea-4426-971a-f092856269a5
-    child: NonZeroUsize,
 }
 
 // TODO: Rename Blake3SeqNo
@@ -19,28 +14,16 @@ impl FieldAddress for Blake3SeqNo {
 
         Self {
             hasher: Hasher::new(),
-            child: NonZeroUsize::new(1).unwrap(),
         }
     }
-    fn next_child(&mut self) -> Self {
-        profile_method!(next_child);
+    fn child(&mut self, number: u64) -> Self {
+        profile_method!(child);
 
-        let child = self.child;
         let mut hasher = self.hasher.clone();
-        // Better to panic than overflow.
-        self.child = NonZeroUsize::new(child.get() + 1).unwrap();
-        // Include the child node
-        write_varint(&mut hasher, child.get().try_into().unwrap()).unwrap();
-        Self {
-            hasher,
-            child: NonZeroUsize::new(1).unwrap(),
-        }
-    }
-    #[inline]
-    fn skip(&mut self, count: usize) {
-        profile_method!(skip);
-
-        self.child = NonZeroUsize::new(self.child.get() + count).unwrap();
+        // This has to be non-zero in order to be injective, since the payload marker writes 0
+        // See also 91e48829-7bea-4426-971a-f092856269a5
+        write_varint(&mut hasher, number + 1).unwrap();
+        Self { hasher }
     }
 }
 

@@ -26,6 +26,8 @@ pub(self) fn unordered_unique_stable_hash<H: StableHasher>(
             .finish()
             .stable_hash(sequence_number.clone(), state);
     }
+
+    // TODO: This may need to include the length, but probably does not
 }
 
 impl<'a, T: StableHash> StableHash for &'a T {
