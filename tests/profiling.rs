@@ -7,6 +7,7 @@ use firestorm::profile_fn;
 use stable_hash::*;
 
 #[test]
+#[ignore = "benchmark"]
 fn compare() {
     let mut data = HashMap::new();
 
@@ -29,6 +30,7 @@ fn compare() {
 }
 
 #[test]
+#[ignore = "benchmark"]
 fn bench() {
     use rand::{thread_rng, Rng, RngCore};
     trait R {
@@ -44,7 +46,7 @@ fn bench() {
     impl R for usize {
         fn rand() -> Self {
             let num: u32 = thread_rng().gen();
-            (num % 80) as usize
+            (num % 45) as usize
         }
     }
 
@@ -241,7 +243,10 @@ fn bench() {
         }
     }
 
-    for _ in 0..10 {
+    let mut factor = 0.0;
+
+    let count = 80;
+    for _ in 0..count {
         use std::time::Instant;
         let value: A = R::rand();
 
@@ -253,13 +258,10 @@ fn bench() {
         let c = crypto_hash(&value);
         let duration_c = Instant::now() - s;
 
-        println!("{}", x);
-        println!("{}", c);
+        factor += duration_c.as_secs_f64() / duration_x.as_secs_f64();
 
-        dbg!(duration_x);
-        dbg!(duration_c);
-
-        let factor = duration_c.as_secs_f64() / duration_x.as_secs_f64();
-        dbg!(factor);
+        drop((x, c));
     }
+    factor /= count as f64;
+    println!("Factor: {}", factor);
 }

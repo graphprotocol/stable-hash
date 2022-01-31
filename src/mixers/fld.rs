@@ -6,12 +6,10 @@ type Num = Wrapping<u128>;
 //   We use a larger accumulator state.
 
 // Followed by: https://jeremykun.com/2021/10/14/group-actions-and-hashing-unordered-multisets/
-// TODO: Consider mixing u128 values in a u256 space
 //
 // From this paper: https://www.preprints.org/manuscript/201710.0192/v1
 // Choose odd q, even r, and prefer large values with gcd(p, r) = 1
 // and pr = q(q-1).
-// TODO: Use SIMD to parallelize this mixing?
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct FldMix(Num);
 
@@ -43,7 +41,7 @@ impl FldMix {
     // If you put that in WolframAlpha it solves at:
     // y = -1389
 
-    // u128::MAX -1389 + 1 is the identity. (Same as 0.wrapping_sub(1389))
+    // u128::MAX.wrapping_sub(1389) is the identity
 
     const IDENTITY: Self = FldMix(Wrapping(340282366920938463463374607431768210067));
 
@@ -58,9 +56,12 @@ impl FldMix {
         Self::P + Self::Q * (x + y) + Self::R * x * y
     }
 
-    pub fn mix(&mut self, other: u64) {
+    pub fn mix(&mut self, value: u128) {
         let x = self.0;
-        let y = Wrapping(other as u128);
+        // The hash space needs to be a smaller space than the accumulator
+        // space, also should have no collision with identity.
+        // Note that the value 0 is not a problem.
+        let y = Wrapping(value >> 1);
         self.0 = Self::u(x, y);
     }
 
@@ -71,7 +72,7 @@ impl FldMix {
         self.0 = Self::u(x, y);
     }
 
-    pub fn finalize(&self) -> u128 {
+    pub fn raw(&self) -> u128 {
         self.0 .0
     }
 }
