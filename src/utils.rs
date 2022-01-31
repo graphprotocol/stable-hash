@@ -1,5 +1,6 @@
 use crate::crypto::Blake3SeqNo;
 use crate::crypto::SetHasher;
+use crate::mixers::fld::{FldMixA, FldMixB};
 use crate::prelude::*;
 use crate::SequenceNumberInt;
 
@@ -54,7 +55,7 @@ impl StableHash for AsInt<'_> {
 pub fn stable_hash<T: StableHash>(value: &T) -> u128 {
     profile_fn!(stable_hash);
 
-    let mut hasher = StableHasherWrapper::default();
+    let mut hasher = StableHasherWrapper::new();
     value.stable_hash(SequenceNumberInt::root(), &mut hasher);
     hasher.finish()
 }
@@ -62,21 +63,29 @@ pub fn stable_hash<T: StableHash>(value: &T) -> u128 {
 pub fn crypto_stable_hash<T: StableHash>(value: &T) -> [u8; 32] {
     profile_fn!(stable_hash);
 
-    let mut hasher = SetHasher::default();
+    let mut hasher = SetHasher::new();
     value.stable_hash(Blake3SeqNo::root(), &mut hasher);
     hasher.finish()
 }
 
 // TODO: Rename this
-#[derive(Default)]
 pub struct StableHasherWrapper {
-    mixer: FldMix,
+    mixer1: FldMixA,
+    mixer2: FldMixB,
     count: u64,
 }
 
 impl StableHasher for StableHasherWrapper {
     type Out = u128;
     type Seq = SequenceNumberInt<u64>;
+
+    fn new() -> Self {
+        Self {
+            mixer1: FldMixA::new(),
+            mixer2: FldMixB::new(),
+            count: 0,
+        }
+    }
 
     fn write(&mut self, sequence_number: Self::Seq, bytes: &[u8]) {
         profile_method!(write);
@@ -87,6 +96,7 @@ impl StableHasher for StableHasherWrapper {
         // t1ha3: 132
         // MetroHash: 120
         // SipHasher24: 86
+        // Since this benchmark, we added a second fld.
 
         // Similarly, a MulFld was tested, which used a multiply within the largest
         // prime field that fit within a u128. Specialized code was used to do the mult
@@ -97,17 +107,21 @@ impl StableHasher for StableHasherWrapper {
         // And it is the fastest, making it a clear choice.
         // In the future:
         //  * Would be good to use the u256 variant of xxh3 (which only differs in the
-        //    finalization step) and pass that into two separate FldMix using different
-        //    constants. Then, finalize to u128 by writing both to another xxh3 instance
-        //    and finalizing that as u128.
+        //    finalization step) and write 127 bits of the value into each mixer.
+        //    See also bdf7259b-12ee-4b95-b5d1-aefb60a935cf
         //  * Verify that we are turning on the vectorizer. It is not clear if this is
         //    done automatically by the Rust compiler (and the SIMD story for Rust has
-        //    been weak to date).
+        //    been weak to date). Could be better performance.
+        //  * Re-check the SIMD branch, but with target-cpu=native on (which may have been missed
+        //    when testing the simple-simd branch
         // For more information about XXH3, see this:
         // https://fastcompression.blogspot.com/2019/03/presenting-xxh3.html
         // This hash is a beast.
         let hash = xxhash_rust::xxh3::xxh3_128_with_seed(bytes, sequence_number.rollup());
-        self.mixer.mix(hash);
+        let h1 = hash as u64;
+        let h2 = (hash >> 64) as u64;
+        self.mixer1.mix64(h1);
+        self.mixer2.mix64(h2);
         self.count += 1;
 
         // For posterity, here are some of the unused variants
@@ -119,13 +133,11 @@ impl StableHasher for StableHasherWrapper {
         let mut hasher = SipHasher::new_with_keys(7, sequence_number.rollup());
         hasher.write(bytes);
         let hash = hasher.finish128();
-        self.mixer.mix(((hash.h1 as u128) << 64) | hash.h2 as u128);
         */
 
         // T1ha3
         /*
         let hash = t1ha::t1ha2_atonce128(bytes, sequence_number.rollup());
-        self.mixer.mix(hash);
         */
 
         // MetroHash
@@ -134,14 +146,15 @@ impl StableHasher for StableHasherWrapper {
         use std::hash::Hasher;
         hasher.write(bytes);
         let (h1, h2) = hasher.finish128();
-        let h128 = ((h1 as u128) << 64) | h2 as u128;
-        self.mixer.mix(h128);
         */
     }
 
     fn finish(&self) -> u128 {
         profile_method!(finish);
 
-        xxhash_rust::xxh3::xxh3_128_with_seed(&self.mixer.raw().to_le_bytes(), self.count)
+        // Assumes little-endian
+        let bytes: [u8; 32] =
+            unsafe { std::mem::transmute((self.mixer1.raw(), self.mixer2.raw())) };
+        xxhash_rust::xxh3::xxh3_128_with_seed(&bytes, self.count)
     }
 }

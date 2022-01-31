@@ -20,7 +20,7 @@ pub(self) fn unordered_unique_stable_hash<H: StableHasher>(
     for member in items {
         // Must create an independent hasher to "break" relationship between
         // multiple SeqNo.
-        let mut new_hasher = H::default();
+        let mut new_hasher = H::new();
         member.stable_hash(H::Seq::root(), &mut new_hasher);
         new_hasher
             .finish()
