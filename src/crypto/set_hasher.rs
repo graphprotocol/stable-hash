@@ -81,7 +81,7 @@ impl UnorderedAggregator<Blake3SeqNo> for SetHasher {
         profile_method!(write);
 
         // Add the hash of the value to the set.
-        let hash = crate::utils::stable_hash::<Self, _>(&value);
+        let hash = crate::utils::crypto_stable_hash(&value);
         StableHasher::write(self, sequence_number, &hash);
     }
 }

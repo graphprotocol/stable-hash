@@ -32,7 +32,7 @@ fn add_optional_field() {
         one: 5u32,
         two: Option::<u32>::None,
     };
-    equal!(5230810902392248168, "3428a4134bfdac56aa04614504705b0ffd1d48f27777b109a793e5a641324212"; one, two);
+    equal!(178471606684813810220610251842721681989, "3428a4134bfdac56aa04614504705b0ffd1d48f27777b109a793e5a641324212"; one, two);
 }
 
 #[test]
@@ -42,7 +42,7 @@ fn add_default_field() {
         one: "one",
         two: "",
     };
-    equal!(15445889024504656949, "65bf96c193b5d365191b86da83097939ccd67ac226d9f3a3c991719e338de7ed"; one, two);
+    equal!(193684735422105326459972389573267593180, "65bf96c193b5d365191b86da83097939ccd67ac226d9f3a3c991719e338de7ed"; one, two);
 }
 
 #[test]
@@ -59,7 +59,7 @@ fn add_non_default_field() {
 fn defaults_are_non_emitting() {
     let empty_2: String = hex::encode(SetHasher::default().finish());
     // TODO: Verify this number is non-emitting
-    equal!(10017795945109076476, &empty_2; false, Option::<bool>::None, 0i32, Vec::<String>::new(), "");
+    equal!(276203950227606213588649287661350965464, &empty_2; false, Option::<bool>::None, 0i32, Vec::<String>::new(), "");
 }
 
 #[test]
@@ -79,7 +79,7 @@ fn empty_vec_is_default() {
         one: true,
         two: Vec::<u32>::new(),
     };
-    equal!(4514777565254173969, "db4657c873e33a60e581eb5458aba6c76f510e023872c76a3134608619342c59"; one, two);
+    equal!(134364961305729631316096677261482265518, "db4657c873e33a60e581eb5458aba6c76f510e023872c76a3134608619342c59"; one, two);
 }
 
 #[test]
@@ -109,7 +109,7 @@ fn as_bytes() {
 #[test]
 fn numbers_through_vec() {
     equal!(
-        2470255579160275380, "25dfaa9f92a3f2b05a1bdfbc66ec594c545dc39ebdb0e9ae769350ea1726e2b7";
+        158804724619362998983063372871837720505, "76f2baeae1278bdd771f9bbefd07ba570066cd710be014ac65785fb411d5c547";
         vec![1u32, 2u32],
         vec![1u16, 2u16]
     );

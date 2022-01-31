@@ -1,6 +1,6 @@
 pub mod crypto;
-mod fld_mixer;
 mod impls;
+mod mixers;
 pub mod prelude;
 mod sequence_number;
 mod stable_hash;
