@@ -6,5 +6,5 @@ pub mod prelude;
 mod stable_hash;
 pub mod utils;
 
-pub use crate::field_address::{FieldAddress, SequenceNumberInt};
+pub use crate::field_address::FieldAddress;
 pub use crate::stable_hash::{StableHash, StableHasher};

@@ -1,8 +1,6 @@
-use crate::crypto::Blake3SeqNo;
 use crate::crypto::SetHasher;
 use crate::mixers::fld::{FldMixA, FldMixB};
 use crate::prelude::*;
-use crate::SequenceNumberInt;
 
 /// Treat some &[u8] as a sequence of bytes, rather than a sequence of numbers.
 /// Using this can result in a significant performance gain but does not support
@@ -43,10 +41,10 @@ impl StableHash for AsInt<'_> {
     fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Addr, state: &mut H) {
         profile_method!(stable_hash);
 
-        self.is_negative
-            .stable_hash(sequence_number.next_child(), state);
         let canon = trim_zeros(self.little_endian);
         if !canon.is_empty() {
+            self.is_negative
+                .stable_hash(sequence_number.child(0), state);
             state.write(sequence_number, canon);
         }
     }
@@ -56,7 +54,7 @@ pub fn stable_hash<T: StableHash>(value: &T) -> u128 {
     profile_fn!(stable_hash);
 
     let mut hasher = StableHasherWrapper::new();
-    value.stable_hash(SequenceNumberInt::root(), &mut hasher);
+    value.stable_hash(FieldAddress::root(), &mut hasher);
     hasher.finish()
 }
 
@@ -64,7 +62,7 @@ pub fn crypto_stable_hash<T: StableHash>(value: &T) -> [u8; 32] {
     profile_fn!(stable_hash);
 
     let mut hasher = SetHasher::new();
-    value.stable_hash(Blake3SeqNo::root(), &mut hasher);
+    value.stable_hash(FieldAddress::root(), &mut hasher);
     hasher.finish()
 }
 
@@ -77,7 +75,7 @@ pub struct StableHasherWrapper {
 
 impl StableHasher for StableHasherWrapper {
     type Out = u128;
-    type Addr = SequenceNumberInt;
+    type Addr = u64;
 
     fn new() -> Self {
         Self {
@@ -117,7 +115,7 @@ impl StableHasher for StableHasherWrapper {
         // For more information about XXH3, see this:
         // https://fastcompression.blogspot.com/2019/03/presenting-xxh3.html
         // This hash is a beast.
-        let hash = xxhash_rust::xxh3::xxh3_128_with_seed(bytes, sequence_number.rollup());
+        let hash = xxhash_rust::xxh3::xxh3_128_with_seed(bytes, sequence_number);
         let h1 = hash as u64;
         let h2 = (hash >> 64) as u64;
         self.mixer1.mix64(h1);
@@ -158,3 +156,6 @@ impl StableHasher for StableHasherWrapper {
         xxhash_rust::xxh3::xxh3_128_with_seed(&bytes, self.count)
     }
 }
+
+// TODO: Write a sanity checker that exhaustively verifies that there
+// are no collisions for sequence numbers
