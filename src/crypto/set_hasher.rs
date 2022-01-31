@@ -45,12 +45,6 @@ impl Default for SetHasher {
 
 impl SetHasher {
     #[inline]
-    pub fn new() -> Self {
-        profile_method!(new);
-
-        Default::default()
-    }
-    #[inline]
     fn mixin_raw(&mut self, digits: &UBig) {
         profile_method!(mixin_raw);
 
@@ -99,6 +93,13 @@ impl StableHash for [u8; 32] {
 impl StableHasher for SetHasher {
     type Out = [u8; 32];
     type Seq = Blake3SeqNo;
+
+    #[inline]
+    fn new() -> Self {
+        profile_method!(new);
+
+        Default::default()
+    }
 
     fn write(&mut self, sequence_number: Self::Seq, bytes: &[u8]) {
         profile_method!(write);

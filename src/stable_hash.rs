@@ -8,11 +8,12 @@ pub trait UnorderedAggregator<T> {
 /// * builds (independent of rustc version or std implementation details)
 /// * platforms (eg: 32 bit & 64 bit, x68 and ARM)
 /// * processes (multiple runs of the same program)
-pub trait StableHasher: Default {
+pub trait StableHasher {
     type Out: StableHash;
     type Seq: SequenceNumber;
     fn write(&mut self, sequence_number: Self::Seq, bytes: &[u8]);
     fn finish(&self) -> Self::Out;
+    fn new() -> Self;
 }
 
 /// Like Hash, but consistent across:
