@@ -151,7 +151,7 @@ fn bench() {
     }
 
     impl StableHash for Value {
-        fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Seq, state: &mut H) {
+        fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Addr, state: &mut H) {
             match self {
                 Self::Null => return,
                 Self::Number(n) => {
@@ -181,7 +181,7 @@ fn bench() {
     }
 
     impl StableHash for C {
-        fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Seq, state: &mut H) {
+        fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Addr, state: &mut H) {
             self.s.stable_hash(sequence_number.next_child(), state);
             self.n.stable_hash(sequence_number.next_child(), state);
         }
@@ -204,7 +204,7 @@ fn bench() {
     }
 
     impl StableHash for A {
-        fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Seq, state: &mut H) {
+        fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Addr, state: &mut H) {
             self.v1.stable_hash(sequence_number.next_child(), state);
             self.v2.stable_hash(sequence_number.next_child(), state);
             self.v3.stable_hash(sequence_number.next_child(), state);
@@ -228,7 +228,7 @@ fn bench() {
     }
 
     impl StableHash for B {
-        fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Seq, state: &mut H) {
+        fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Addr, state: &mut H) {
             self.a.stable_hash(sequence_number.next_child(), state);
             self.c.stable_hash(sequence_number.next_child(), state);
         }

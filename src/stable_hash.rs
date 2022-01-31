@@ -10,8 +10,8 @@ pub trait UnorderedAggregator<T> {
 /// * processes (multiple runs of the same program)
 pub trait StableHasher {
     type Out: StableHash;
-    type Seq: SequenceNumber;
-    fn write(&mut self, sequence_number: Self::Seq, bytes: &[u8]);
+    type Addr: FieldAddress;
+    fn write(&mut self, sequence_number: Self::Addr, bytes: &[u8]);
     fn finish(&self) -> Self::Out;
     fn new() -> Self;
 }
@@ -21,5 +21,5 @@ pub trait StableHasher {
 /// * platforms (eg: 32 bit & 64 bit, x68 and ARM)
 /// * processes (multiple runs of the same program)
 pub trait StableHash {
-    fn stable_hash<H: StableHasher>(&self, sequence_number: H::Seq, state: &mut H);
+    fn stable_hash<H: StableHasher>(&self, sequence_number: H::Addr, state: &mut H);
 }

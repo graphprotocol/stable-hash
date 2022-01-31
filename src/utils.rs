@@ -10,7 +10,7 @@ use crate::SequenceNumberInt;
 pub struct AsBytes<'a>(pub &'a [u8]);
 
 impl StableHash for AsBytes<'_> {
-    fn stable_hash<H: StableHasher>(&self, sequence_number: H::Seq, state: &mut H) {
+    fn stable_hash<H: StableHasher>(&self, sequence_number: H::Addr, state: &mut H) {
         profile_method!(stable_hash);
 
         if !self.0.is_empty() {
@@ -40,7 +40,7 @@ pub struct AsInt<'a> {
 }
 
 impl StableHash for AsInt<'_> {
-    fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Seq, state: &mut H) {
+    fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Addr, state: &mut H) {
         profile_method!(stable_hash);
 
         self.is_negative
@@ -77,7 +77,7 @@ pub struct StableHasherWrapper {
 
 impl StableHasher for StableHasherWrapper {
     type Out = u128;
-    type Seq = SequenceNumberInt<u64>;
+    type Addr = SequenceNumberInt;
 
     fn new() -> Self {
         Self {
@@ -87,7 +87,7 @@ impl StableHasher for StableHasherWrapper {
         }
     }
 
-    fn write(&mut self, sequence_number: Self::Seq, bytes: &[u8]) {
+    fn write(&mut self, sequence_number: Self::Addr, bytes: &[u8]) {
         profile_method!(write);
 
         // These are how much faster the current implementations are as compared to
