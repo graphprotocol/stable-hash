@@ -1,6 +1,5 @@
-use super::blake3_address::Blake3Address;
+use super::address::CryptoAddress;
 use crate::prelude::*;
-use crate::stable_hash::UnorderedAggregator;
 use blake3::Hasher;
 use ibig::UBig;
 use lazy_static::lazy_static;
@@ -30,7 +29,7 @@ lazy_static! {
 /// uniquely identify parts within the struct. Conveniently, the FieldAddress::skip
 /// method can be used to jump to parts of a vec or struct efficiently.
 // TODO: Rename this and make pub, since we need to restore it from bytes
-pub struct SetHasher {
+pub struct CryptoStableHasher {
     // TODO: (Performance). We want an int 2056 + 2048 = 4104 bit int (u4160 if using a word size of 64 at 65 words)
     // That's enough to handle any sequence of mixin operations without overflow.
     // https://github.com/paritytech/parity-common/issues/388
@@ -38,13 +37,13 @@ pub struct SetHasher {
     value: UBig,
 }
 
-impl Default for SetHasher {
+impl Default for CryptoStableHasher {
     fn default() -> Self {
         Self { value: UBig::one() }
     }
 }
 
-impl SetHasher {
+impl CryptoStableHasher {
     #[inline]
     fn mixin_raw(&mut self, digits: &UBig) {
         profile_method!(mixin_raw);
@@ -68,19 +67,6 @@ impl SetHasher {
     }
 }
 
-/// The SetHasher is already updated in an unordered fashion, so no special second struct
-/// is needed. Starts at 1 and mixin when finished.
-impl UnorderedAggregator<Blake3Address> for SetHasher {
-    #[inline]
-    fn write(&mut self, value: impl StableHash, field_address: Blake3Address) {
-        profile_method!(write);
-
-        // Add the hash of the value to the set.
-        let hash = crate::utils::crypto_stable_hash(&value);
-        StableHasher::write(self, field_address, &hash);
-    }
-}
-
 // TODO: Should we consider doing this differently w/ const generics?
 // Unfortunately we would want specialization to do this.
 // TODO: Should we respect the rule about defaults not writing here?
@@ -91,9 +77,9 @@ impl StableHash for [u8; 32] {
     }
 }
 
-impl StableHasher for SetHasher {
+impl StableHasher for CryptoStableHasher {
     type Out = [u8; 32];
-    type Addr = Blake3Address;
+    type Addr = CryptoAddress;
 
     #[inline]
     fn new() -> Self {

@@ -20,8 +20,8 @@ fn compare() {
 
     fn profile(value: &impl StableHash) {
         profile_fn!(profile);
-        xxhash(value);
-        crypto_hash(value);
+        fast_stable_hash(value);
+        crypto_stable_hash(value);
     }
 
     if firestorm::enabled() {
@@ -252,11 +252,11 @@ fn bench() {
         let value: A = R::rand();
 
         let s = Instant::now();
-        let x = xxhash(&value);
+        let x = fast_stable_hash(&value);
         let duration_x = Instant::now() - s;
 
         let s = Instant::now();
-        let c = crypto_hash(&value);
+        let c = crypto_stable_hash(&value);
         let duration_c = Instant::now() - s;
 
         factor += duration_c.as_secs_f64() / duration_x.as_secs_f64();

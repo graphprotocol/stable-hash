@@ -1,16 +1,11 @@
 use firestorm::profile_fn;
+pub use stable_hash::fast_stable_hash;
 use stable_hash::*;
 
-pub fn xxhash(value: &impl StableHash) -> u128 {
-    profile_fn!(xxhash);
-
-    utils::stable_hash(value)
-}
-
-pub fn crypto_hash(value: &impl StableHash) -> String {
+pub fn crypto_stable_hash_str(value: &impl StableHash) -> String {
     profile_fn!(crypto_hash);
 
-    let raw = utils::crypto_stable_hash(value);
+    let raw = stable_hash::crypto_stable_hash(value);
     hex::encode(raw)
 }
 
@@ -18,8 +13,8 @@ pub fn crypto_hash(value: &impl StableHash) -> String {
 macro_rules! equal {
     ($value_xx:expr, $value_crypto:expr; $($data:expr),+) => {
         $(
-            assert_eq!(common::xxhash(&$data), $value_xx);
-            assert_eq!(&common::crypto_hash(&$data), $value_crypto);
+            assert_eq!(common::fast_stable_hash(&$data), $value_xx);
+            assert_eq!(&common::crypto_stable_hash_str(&$data), $value_crypto);
         )+
     }
 }
@@ -28,8 +23,9 @@ macro_rules! equal {
 macro_rules! not_equal {
     ($left:expr, $right:expr) => {
         assert!(
-            common::xxhash(&$left) != common::xxhash(&$right)
-                && common::crypto_hash(&$left) != common::crypto_hash(&$right)
+            common::fast_stable_hash(&$left) != common::fast_stable_hash(&$right)
+                && common::crypto_stable_hash_str(&$left)
+                    != common::crypto_stable_hash_str(&$right)
         )
     };
 }

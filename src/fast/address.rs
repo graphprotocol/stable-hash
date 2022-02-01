@@ -1,10 +1,5 @@
 use crate::prelude::*;
 
-pub trait FieldAddress: Clone {
-    fn root() -> Self;
-    fn child(&mut self, number: u64) -> Self;
-}
-
 impl FieldAddress for u64 {
     fn root() -> Self {
         17

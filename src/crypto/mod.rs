@@ -1,2 +1,4 @@
-pub(crate) mod blake3_address;
-pub(crate) mod set_hasher;
+pub(crate) mod address;
+pub(crate) mod hasher;
+
+pub use hasher::CryptoStableHasher;
