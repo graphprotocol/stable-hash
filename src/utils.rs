@@ -106,6 +106,8 @@ impl StableHasher for StableHasherWrapper {
         //  * Would be good to use the u256 variant of xxh3 (which only differs in the
         //    finalization step) and write 127 bits of the value into each mixer.
         //    See also bdf7259b-12ee-4b95-b5d1-aefb60a935cf
+        //    Instead, we are deriving a second hash here as recommended in this issue:
+        //    https://github.com/Cyan4973/xxHash/issues/680
         //  * Verify that we are turning on the vectorizer. It is not clear if this is
         //    done automatically by the Rust compiler (and the SIMD story for Rust has
         //    been weak to date). Could be better performance.
@@ -115,10 +117,15 @@ impl StableHasher for StableHasherWrapper {
         // https://fastcompression.blogspot.com/2019/03/presenting-xxh3.html
         // This hash is a beast.
         let hash = xxhash_rust::xxh3::xxh3_128_with_seed(bytes, field_address);
-        let h1 = hash as u64;
-        let h2 = (hash >> 64) as u64;
-        self.mixer1.mix64(h1);
-        self.mixer2.mix64(h2);
+        self.mixer1.mix(hash);
+        // Mixin the length and field address.
+        // The rotate_left by 1 ensures that it's a different
+        // bit that is cut off during mix (which uses 127 bits)
+        // so that we use the whole 128 bits. Also we put the byte len
+        // at the top since the top bit of that is definitely 0 and it
+        // will get masked out so it should be unused.
+        let hash2 = hash.rotate_left(1) ^ ((bytes.len() as u128) << 64 | (field_address as u128));
+        self.mixer2.mix(hash2);
         self.count += 1;
 
         // For posterity, here are some of the unused variants

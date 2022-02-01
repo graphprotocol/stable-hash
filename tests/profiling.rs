@@ -30,7 +30,7 @@ fn compare() {
 }
 
 #[test]
-#[ignore = "benchmark"]
+//#[ignore = "benchmark"]
 fn bench() {
     use rand::{thread_rng, Rng, RngCore};
     trait R {

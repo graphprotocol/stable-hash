@@ -12,10 +12,7 @@ leb128 = "0.2.4"
 ibig = "0.3.1"
 lazy_static = "1.4.0"
 firestorm = "0.5.0"
-siphasher = "0.3.7"
-metrohash = "1.0.6"
 xxhash-rust = {version="0.8.2", features=["xxh3"]}
-t1ha = "0.1.0"
 
 [dev-dependencies]
 hex = "0.4.2"

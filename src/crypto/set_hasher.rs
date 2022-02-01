@@ -29,7 +29,8 @@ lazy_static! {
 /// parallel as long as field addresses are deterministically produced to
 /// uniquely identify parts within the struct. Conveniently, the FieldAddress::skip
 /// method can be used to jump to parts of a vec or struct efficiently.
-pub(crate) struct SetHasher {
+// TODO: Rename this and make pub, since we need to restore it from bytes
+pub struct SetHasher {
     // TODO: (Performance). We want an int 2056 + 2048 = 4104 bit int (u4160 if using a word size of 64 at 65 words)
     // That's enough to handle any sequence of mixin operations without overflow.
     // https://github.com/paritytech/parity-common/issues/388
