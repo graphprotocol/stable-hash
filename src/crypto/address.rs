@@ -4,11 +4,11 @@ use leb128::write::unsigned as write_varint;
 
 // TODO: This should not be public
 #[derive(Clone)]
-pub struct Blake3Address {
+pub struct CryptoAddress {
     hasher: Hasher,
 }
 
-impl FieldAddress for Blake3Address {
+impl FieldAddress for CryptoAddress {
     fn root() -> Self {
         profile_method!(root);
 
@@ -27,7 +27,7 @@ impl FieldAddress for Blake3Address {
     }
 }
 
-impl Blake3Address {
+impl CryptoAddress {
     pub(crate) fn finish(self, payload: &[u8]) -> OutputReader {
         profile_method!(finish);
 
