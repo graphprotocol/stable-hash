@@ -22,20 +22,13 @@ impl<const P: u128, const Q: u128, const R: u128> FldMix<P, Q, R> {
     }
 
     // See also bdf7259b-12ee-4b95-b5d1-aefb60a935cf
-    /*
     pub fn mix(&mut self, value: u128) {
         let x = self.0;
         // The hash space needs to be a smaller space than the accumulator
         // space, also should have no collision with identity.
         // Note that the value 0 is not a problem.
-        let y = Wrapping(value >> 1);
-        self.0 = Self::u(x, y);
-    }
-    */
-
-    pub fn mix64(&mut self, value: u64) {
-        let x = self.0;
-        let y = Wrapping(value as u128);
+        const MASK: u128 = u128::MAX >> 1;
+        let y = Wrapping(value & MASK);
         self.0 = Self::u(x, y);
     }
 
@@ -57,22 +50,22 @@ mod tests {
 
     fn test_one<const P: u128, const Q: u128, const R: u128>() {
         let mut a = FldMix::<P, Q, R>::new();
-        a.mix64(100);
-        a.mix64(10);
-        a.mix64(999);
+        a.mix(100);
+        a.mix(10);
+        a.mix(999);
 
         let mut b = FldMix::<P, Q, R>::new();
-        b.mix64(10);
-        b.mix64(999);
-        b.mix64(100);
+        b.mix(10);
+        b.mix(999);
+        b.mix(100);
 
         assert_eq!(a, b);
 
         let mut c = FldMix::<P, Q, R>::new();
         let mut d = FldMix::<P, Q, R>::new();
-        c.mix64(999);
-        c.mix64(10);
-        d.mix64(100);
+        c.mix(999);
+        c.mix(10);
+        d.mix(100);
         c.combine(d);
         assert_eq!(b, c);
     }
