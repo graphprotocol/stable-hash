@@ -2,13 +2,13 @@ use crate::prelude::*;
 use blake3::{Hasher, OutputReader};
 use leb128::write::unsigned as write_varint;
 
+// TODO: This should not be public
 #[derive(Clone)]
-pub struct Blake3SeqNo {
+pub struct Blake3Address {
     hasher: Hasher,
 }
 
-// TODO: Rename Blake3SeqNo
-impl FieldAddress for Blake3SeqNo {
+impl FieldAddress for Blake3Address {
     fn root() -> Self {
         profile_method!(root);
 
@@ -27,7 +27,7 @@ impl FieldAddress for Blake3SeqNo {
     }
 }
 
-impl Blake3SeqNo {
+impl Blake3Address {
     pub(crate) fn finish(self, payload: &[u8]) -> OutputReader {
         profile_method!(finish);
 
@@ -35,16 +35,11 @@ impl Blake3SeqNo {
 
         // To debug all the payloads in a hash to find a diff, this can be useful.
         /*
-        #[derive(Debug)]
-        struct Update {
-            payload: String,
-            seq_no: String,
-        }
-        let update = Update {
-            seq_no: hex::encode(hasher.finalize().as_bytes()),
-            payload: hex::encode(payload),
-        };
-        dbg!(update);
+        dbg!(
+            "Update:\n\tpayload: {}\n\tfield_address: {}",
+            hex::encode(hasher.finalize().as_bytes()),
+            hex::encode(payload)
+        );
         */
 
         // See also 91e48829-7bea-4426-971a-f092856269a5

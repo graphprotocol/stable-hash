@@ -3,25 +3,25 @@ use crate::prelude::*;
 macro_rules! impl_int {
     ($P:ty, $N:ty) => {
         impl StableHash for $P {
-            fn stable_hash<H: StableHasher>(&self, sequence_number: H::Addr, state: &mut H) {
+            fn stable_hash<H: StableHasher>(&self, field_address: H::Addr, state: &mut H) {
                 profile_method!(stable_hash);
 
                 AsInt {
                     is_negative: false,
                     little_endian: &self.to_le_bytes(),
                 }
-                .stable_hash(sequence_number, state)
+                .stable_hash(field_address, state)
             }
         }
         impl StableHash for $N {
-            fn stable_hash<H: StableHasher>(&self, sequence_number: H::Addr, state: &mut H) {
+            fn stable_hash<H: StableHasher>(&self, field_address: H::Addr, state: &mut H) {
                 profile_method!(stable_hash);
 
                 AsInt {
                     is_negative: self.is_negative(),
                     little_endian: &self.wrapping_abs().to_le_bytes(),
                 }
-                .stable_hash(sequence_number, state)
+                .stable_hash(field_address, state)
             }
         }
     };

@@ -1,6 +1,5 @@
-use stable_hash::crypto::SetHasher;
 use stable_hash::prelude::*;
-use stable_hash::utils::*;
+use stable_hash::utils::AsBytes;
 mod common;
 
 struct One<T0> {
@@ -8,8 +7,8 @@ struct One<T0> {
 }
 
 impl<T0: StableHash> StableHash for One<T0> {
-    fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Addr, state: &mut H) {
-        self.one.stable_hash(sequence_number.child(0), state);
+    fn stable_hash<H: StableHasher>(&self, mut field_address: H::Addr, state: &mut H) {
+        self.one.stable_hash(field_address.child(0), state);
     }
 }
 
@@ -19,9 +18,9 @@ struct Two<T0, T1> {
 }
 
 impl<T0: StableHash, T1: StableHash> StableHash for Two<T0, T1> {
-    fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Addr, state: &mut H) {
-        self.one.stable_hash(sequence_number.child(0), state);
-        self.two.stable_hash(sequence_number.child(1), state);
+    fn stable_hash<H: StableHasher>(&self, mut field_address: H::Addr, state: &mut H) {
+        self.one.stable_hash(field_address.child(0), state);
+        self.two.stable_hash(field_address.child(1), state);
     }
 }
 
@@ -53,13 +52,6 @@ fn add_non_default_field() {
         two: "two",
     };
     not_equal!(one, two);
-}
-
-#[test]
-fn defaults_are_non_emitting() {
-    let empty_2: String = hex::encode(SetHasher::new().finish());
-    // TODO: Verify this number is non-emitting
-    equal!(16283408782925993922971546446457817912, &empty_2; false, Option::<bool>::None, 0i32, Vec::<String>::new(), "");
 }
 
 #[test]

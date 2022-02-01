@@ -12,19 +12,21 @@ use crate::prelude::*;
 
 pub(self) fn unordered_unique_stable_hash<H: StableHasher>(
     items: impl Iterator<Item = impl StableHash>,
-    sequence_number: H::Addr,
+    field_address: H::Addr,
     state: &mut H,
 ) {
     profile_fn!(unordered_unique_stable_hash);
 
     for member in items {
         // Must create an independent hasher to "break" relationship between
-        // multiple SeqNo.
+        // independent field addresses.
         let mut new_hasher = H::new();
         member.stable_hash(H::Addr::root(), &mut new_hasher);
+        // TODO: Write raw bytes here
+        // using write method on state
         new_hasher
             .finish()
-            .stable_hash(sequence_number.clone(), state);
+            .stable_hash(field_address.clone(), state);
     }
 
     // TODO: This may need to include the length, but probably does not
@@ -32,9 +34,9 @@ pub(self) fn unordered_unique_stable_hash<H: StableHasher>(
 
 impl<'a, T: StableHash> StableHash for &'a T {
     #[inline]
-    fn stable_hash<H: StableHasher>(&self, sequence_number: H::Addr, state: &mut H) {
+    fn stable_hash<H: StableHasher>(&self, field_address: H::Addr, state: &mut H) {
         profile_method!(stable_hash);
 
-        (*self).stable_hash(sequence_number, state)
+        (*self).stable_hash(field_address, state)
     }
 }

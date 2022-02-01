@@ -1,4 +1,4 @@
-use super::blake3_sequence::Blake3SeqNo;
+use super::blake3_address::Blake3Address;
 use crate::prelude::*;
 use crate::stable_hash::UnorderedAggregator;
 use blake3::Hasher;
@@ -26,10 +26,10 @@ lazy_static! {
 /// aggregator of the cells to produce a final result.
 ///
 /// Within this framework a huge struct can be hashed incrementally or even in
-/// parallel as long as sequence numbers are deterministically produced to
-/// identify parts within the struct. Conveniently, the FieldAddress::skip
+/// parallel as long as field addresses are deterministically produced to
+/// uniquely identify parts within the struct. Conveniently, the FieldAddress::skip
 /// method can be used to jump to parts of a vec or struct efficiently.
-pub struct SetHasher {
+pub(crate) struct SetHasher {
     // TODO: (Performance). We want an int 2056 + 2048 = 4104 bit int (u4160 if using a word size of 64 at 65 words)
     // That's enough to handle any sequence of mixin operations without overflow.
     // https://github.com/paritytech/parity-common/issues/388
@@ -69,14 +69,14 @@ impl SetHasher {
 
 /// The SetHasher is already updated in an unordered fashion, so no special second struct
 /// is needed. Starts at 1 and mixin when finished.
-impl UnorderedAggregator<Blake3SeqNo> for SetHasher {
+impl UnorderedAggregator<Blake3Address> for SetHasher {
     #[inline]
-    fn write(&mut self, value: impl StableHash, sequence_number: Blake3SeqNo) {
+    fn write(&mut self, value: impl StableHash, field_address: Blake3Address) {
         profile_method!(write);
 
         // Add the hash of the value to the set.
         let hash = crate::utils::crypto_stable_hash(&value);
-        StableHasher::write(self, sequence_number, &hash);
+        StableHasher::write(self, field_address, &hash);
     }
 }
 
@@ -85,14 +85,14 @@ impl UnorderedAggregator<Blake3SeqNo> for SetHasher {
 // TODO: Should we respect the rule about defaults not writing here?
 // I think we should not implement this and instead require that the Finalized type be coercible to bytes.
 impl StableHash for [u8; 32] {
-    fn stable_hash<H: StableHasher>(&self, sequence_number: H::Addr, state: &mut H) {
-        state.write(sequence_number, self);
+    fn stable_hash<H: StableHasher>(&self, field_address: H::Addr, state: &mut H) {
+        state.write(field_address, self);
     }
 }
 
 impl StableHasher for SetHasher {
     type Out = [u8; 32];
-    type Addr = Blake3SeqNo;
+    type Addr = Blake3Address;
 
     #[inline]
     fn new() -> Self {
@@ -101,11 +101,11 @@ impl StableHasher for SetHasher {
         Default::default()
     }
 
-    fn write(&mut self, sequence_number: Self::Addr, bytes: &[u8]) {
+    fn write(&mut self, field_address: Self::Addr, bytes: &[u8]) {
         profile_method!(write);
 
         // Write the field into a database cell
-        let mut output = sequence_number.finish(bytes);
+        let mut output = field_address.finish(bytes);
         // Extend to the length necessary. This is a 2048 bit value, 1 bit
         // less than the prime the hash wraps around.
         let mut digits = [0u8; 256];

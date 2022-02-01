@@ -5,7 +5,7 @@ macro_rules! impl_tuple {
         impl<$($T : StableHash,)*> StableHash for ($($T,)*) {
             #[allow(non_snake_case)]
             #[allow(unused_assignments)]
-            fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Addr, state: &mut H) {
+            fn stable_hash<H: StableHasher>(&self, mut field_address: H::Addr, state: &mut H) {
                 profile_method!(stable_hash);
 
                 let ($($T,)*) = self;
@@ -13,7 +13,7 @@ macro_rules! impl_tuple {
                 let mut i = 0;
 
                 $(
-                    $T.stable_hash(sequence_number.child(i), state);
+                    $T.stable_hash(field_address.child(i), state);
                     i += 1;
                 )*
             }

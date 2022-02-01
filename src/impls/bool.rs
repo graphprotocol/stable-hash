@@ -1,11 +1,11 @@
 use crate::prelude::*;
 
 impl StableHash for bool {
-    fn stable_hash<H: StableHasher>(&self, sequence_number: H::Addr, state: &mut H) {
+    fn stable_hash<H: StableHasher>(&self, field_address: H::Addr, state: &mut H) {
         profile_method!(stable_hash);
 
         if *self {
-            state.write(sequence_number, &[]);
+            state.write(field_address, &[]);
         }
     }
 }
