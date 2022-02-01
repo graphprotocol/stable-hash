@@ -150,9 +150,12 @@ impl StableHasher for StableHasherWrapper {
     fn finish(&self) -> u128 {
         profile_method!(finish);
 
-        // Assumes little-endian
-        let bytes: [u8; 32] =
-            unsafe { std::mem::transmute((self.mixer1.raw(), self.mixer2.raw())) };
+        let bytes: [u8; 32] = unsafe {
+            std::mem::transmute((
+                self.mixer1.raw().to_le_bytes(),
+                self.mixer2.raw().to_le_bytes(),
+            ))
+        };
         xxhash_rust::xxh3::xxh3_128_with_seed(&bytes, self.count)
     }
 }
