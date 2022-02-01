@@ -1,4 +1,4 @@
-use crate::crypto::SetHasher;
+use crate::crypto::set_hasher::SetHasher;
 use crate::mixers::fld::{FldMixA, FldMixB};
 use crate::prelude::*;
 
@@ -8,11 +8,11 @@ use crate::prelude::*;
 pub struct AsBytes<'a>(pub &'a [u8]);
 
 impl StableHash for AsBytes<'_> {
-    fn stable_hash<H: StableHasher>(&self, sequence_number: H::Addr, state: &mut H) {
+    fn stable_hash<H: StableHasher>(&self, field_address: H::Addr, state: &mut H) {
         profile_method!(stable_hash);
 
         if !self.0.is_empty() {
-            state.write(sequence_number, self.0)
+            state.write(field_address, self.0)
         }
     }
 }
@@ -38,14 +38,13 @@ pub struct AsInt<'a> {
 }
 
 impl StableHash for AsInt<'_> {
-    fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Addr, state: &mut H) {
+    fn stable_hash<H: StableHasher>(&self, mut field_address: H::Addr, state: &mut H) {
         profile_method!(stable_hash);
 
         let canon = trim_zeros(self.little_endian);
         if !canon.is_empty() {
-            self.is_negative
-                .stable_hash(sequence_number.child(0), state);
-            state.write(sequence_number, canon);
+            self.is_negative.stable_hash(field_address.child(0), state);
+            state.write(field_address, canon);
         }
     }
 }
@@ -85,7 +84,7 @@ impl StableHasher for StableHasherWrapper {
         }
     }
 
-    fn write(&mut self, sequence_number: Self::Addr, bytes: &[u8]) {
+    fn write(&mut self, field_address: Self::Addr, bytes: &[u8]) {
         profile_method!(write);
 
         // These are how much faster the current implementations are as compared to
@@ -115,7 +114,7 @@ impl StableHasher for StableHasherWrapper {
         // For more information about XXH3, see this:
         // https://fastcompression.blogspot.com/2019/03/presenting-xxh3.html
         // This hash is a beast.
-        let hash = xxhash_rust::xxh3::xxh3_128_with_seed(bytes, sequence_number);
+        let hash = xxhash_rust::xxh3::xxh3_128_with_seed(bytes, field_address);
         let h1 = hash as u64;
         let h2 = (hash >> 64) as u64;
         self.mixer1.mix64(h1);
@@ -128,19 +127,19 @@ impl StableHasher for StableHasherWrapper {
         /*
         use siphasher::sip128::{Hasher128 as _, SipHasher};
         use std::hash::Hasher;
-        let mut hasher = SipHasher::new_with_keys(7, sequence_number.rollup());
+        let mut hasher = SipHasher::new_with_keys(7, field_address.rollup());
         hasher.write(bytes);
         let hash = hasher.finish128();
         */
 
         // T1ha3
         /*
-        let hash = t1ha::t1ha2_atonce128(bytes, sequence_number.rollup());
+        let hash = t1ha::t1ha2_atonce128(bytes, field_address.rollup());
         */
 
         // MetroHash
         /*
-        let mut hasher = metrohash::MetroHash128::with_seed(sequence_number.rollup());
+        let mut hasher = metrohash::MetroHash128::with_seed(field_address.rollup());
         use std::hash::Hasher;
         hasher.write(bytes);
         let (h1, h2) = hasher.finish128();
@@ -161,4 +160,4 @@ impl StableHasher for StableHasherWrapper {
 }
 
 // TODO: Write a sanity checker that exhaustively verifies that there
-// are no collisions for sequence numbers
+// are no collisions for field addresses
