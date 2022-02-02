@@ -4,6 +4,7 @@ use std::hash::Hash;
 
 use common::*;
 use firestorm::profile_fn;
+use stable_hash::utils::AsBytes;
 use stable_hash::*;
 
 #[test]
@@ -151,7 +152,7 @@ fn bench() {
     }
 
     impl StableHash for Value {
-        fn stable_hash<H: StableHasher>(&self, mut field_address: H::Addr, state: &mut H) {
+        fn stable_hash<H: StableHasher>(&self, field_address: H::Addr, state: &mut H) {
             let variant = match self {
                 Self::Null => return,
                 Self::Number(n) => {
@@ -167,7 +168,7 @@ fn bench() {
                     3
                 }
                 Self::Array(n) => {
-                    n.stable_hash(field_address.child(0), state);
+                    AsBytes(n).stable_hash(field_address.child(0), state);
                     4
                 }
             };
@@ -182,7 +183,7 @@ fn bench() {
     }
 
     impl StableHash for C {
-        fn stable_hash<H: StableHasher>(&self, mut field_address: H::Addr, state: &mut H) {
+        fn stable_hash<H: StableHasher>(&self, field_address: H::Addr, state: &mut H) {
             self.s.stable_hash(field_address.child(0), state);
             self.n.stable_hash(field_address.child(1), state);
         }
@@ -205,7 +206,7 @@ fn bench() {
     }
 
     impl StableHash for A {
-        fn stable_hash<H: StableHasher>(&self, mut field_address: H::Addr, state: &mut H) {
+        fn stable_hash<H: StableHasher>(&self, field_address: H::Addr, state: &mut H) {
             self.v1.stable_hash(field_address.child(0), state);
             self.v2.stable_hash(field_address.child(1), state);
             self.v3.stable_hash(field_address.child(2), state);
@@ -229,7 +230,7 @@ fn bench() {
     }
 
     impl StableHash for B {
-        fn stable_hash<H: StableHasher>(&self, mut field_address: H::Addr, state: &mut H) {
+        fn stable_hash<H: StableHasher>(&self, field_address: H::Addr, state: &mut H) {
             self.a.stable_hash(field_address.child(0), state);
             self.c.stable_hash(field_address.child(1), state);
         }

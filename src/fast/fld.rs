@@ -3,7 +3,7 @@ use std::{num::Wrapping, u128};
 // Useful reading: https://kevinventullo.com/2018/12/24/hashing-unordered-sets-how-far-will-cleverness-take-you/
 // Followed by: https://jeremykun.com/2021/10/14/group-actions-and-hashing-unordered-multisets/
 // Construction taken from this paper: https://www.preprints.org/manuscript/201710.0192/v1
-#[derive(PartialEq, Eq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug, Hash, PartialOrd, Ord)]
 pub struct FldMix<const P: u128, const Q: u128, const R: u128>(Wrapping<u128>);
 
 // // See also 0a3c85e1-117e-4322-8b8c-0adbe22ce8eb
@@ -24,13 +24,16 @@ impl<const P: u128, const Q: u128, const R: u128> FldMix<P, Q, R> {
 
     // See also bdf7259b-12ee-4b95-b5d1-aefb60a935cf
     pub fn mix(&mut self, value: u128) {
-        let x = self.0;
         // The hash space needs to be a smaller space than the accumulator
         // space, also should have no collision with identity.
         // Note that the value 0 is not a problem.
         const MASK: u128 = u128::MAX >> 1;
         let y = Wrapping(value & MASK);
-        self.0 = Self::u(x, y);
+        self.0 = Self::u(self.0, y);
+    }
+
+    pub fn mixin(&mut self, value: &Self) {
+        self.0 = Self::u(self.0, value.0);
     }
 
     #[cfg(test)]
@@ -40,8 +43,14 @@ impl<const P: u128, const Q: u128, const R: u128> FldMix<P, Q, R> {
         self.0 = Self::u(x, y);
     }
 
-    pub fn raw(&self) -> u128 {
-        self.0 .0
+    #[inline]
+    pub fn to_bytes(&self) -> [u8; 16] {
+        self.0 .0.to_le_bytes()
+    }
+
+    #[inline]
+    pub fn from_bytes(value: [u8; 16]) -> Self {
+        Self(Wrapping(u128::from_le_bytes(value)))
     }
 }
 

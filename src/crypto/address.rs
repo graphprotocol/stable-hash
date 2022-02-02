@@ -2,7 +2,6 @@ use crate::prelude::*;
 use blake3::{Hasher, OutputReader};
 use leb128::write::unsigned as write_varint;
 
-// TODO: This should not be public
 #[derive(Clone)]
 pub struct CryptoAddress {
     hasher: Hasher,
@@ -16,7 +15,7 @@ impl FieldAddress for CryptoAddress {
             hasher: Hasher::new(),
         }
     }
-    fn child(&mut self, number: u64) -> Self {
+    fn child(&self, number: u64) -> Self {
         profile_method!(child);
 
         let mut hasher = self.hasher.clone();

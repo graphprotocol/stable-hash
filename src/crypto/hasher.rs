@@ -28,7 +28,6 @@ lazy_static! {
 /// parallel as long as field addresses are deterministically produced to
 /// uniquely identify parts within the struct. Conveniently, the FieldAddress::skip
 /// method can be used to jump to parts of a vec or struct efficiently.
-// TODO: Rename this and make pub, since we need to restore it from bytes
 pub struct CryptoStableHasher {
     // TODO: (Performance). We want an int 2056 + 2048 = 4104 bit int (u4160 if using a word size of 64 at 65 words)
     // That's enough to handle any sequence of mixin operations without overflow.
@@ -51,35 +50,12 @@ impl CryptoStableHasher {
         self.value *= digits;
         self.value %= &*P;
     }
-    pub fn to_bytes(&self) -> Vec<u8> {
-        profile_method!(to_bytes);
-
-        self.value.to_le_bytes()
-    }
-    /// Panics if the bytes are not in a valid format.
-    /// The only valid values are values returned from to_bytes()
-    pub fn from_bytes(bytes: &[u8]) -> Self {
-        profile_method!(from_bytes);
-
-        assert!(bytes.len() <= 257);
-        let value = UBig::from_le_bytes(bytes);
-        Self { value }
-    }
-}
-
-// TODO: Should we consider doing this differently w/ const generics?
-// Unfortunately we would want specialization to do this.
-// TODO: Should we respect the rule about defaults not writing here?
-// I think we should not implement this and instead require that the Finalized type be coercible to bytes.
-impl StableHash for [u8; 32] {
-    fn stable_hash<H: StableHasher>(&self, field_address: H::Addr, state: &mut H) {
-        state.write(field_address, self);
-    }
 }
 
 impl StableHasher for CryptoStableHasher {
     type Out = [u8; 32];
     type Addr = CryptoAddress;
+    type Bytes = Vec<u8>;
 
     #[inline]
     fn new() -> Self {
@@ -101,6 +77,12 @@ impl StableHasher for CryptoStableHasher {
         self.mixin_raw(&digits)
     }
 
+    fn mixin(&mut self, other: &Self) {
+        profile_method!(mixin);
+
+        self.mixin_raw(&other.value)
+    }
+
     fn finish(&self) -> Self::Out {
         profile_method!(finish);
 
@@ -109,5 +91,19 @@ impl StableHasher for CryptoStableHasher {
         let le = self.value.to_le_bytes();
         hasher.update(&le);
         hasher.finalize().into()
+    }
+
+    fn to_bytes(&self) -> Self::Bytes {
+        profile_method!(to_bytes);
+        self.value.to_le_bytes()
+    }
+    /// Panics if the bytes are not in a valid format.
+    /// The only valid values are values returned from to_bytes()
+    fn from_bytes(bytes: Vec<u8>) -> Self {
+        profile_method!(from_bytes);
+
+        assert!(bytes.len() <= 257);
+        let value = UBig::from_le_bytes(&bytes);
+        Self { value }
     }
 }

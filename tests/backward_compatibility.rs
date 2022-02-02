@@ -7,7 +7,7 @@ struct One<T0> {
 }
 
 impl<T0: StableHash> StableHash for One<T0> {
-    fn stable_hash<H: StableHasher>(&self, mut field_address: H::Addr, state: &mut H) {
+    fn stable_hash<H: StableHasher>(&self, field_address: H::Addr, state: &mut H) {
         self.one.stable_hash(field_address.child(0), state);
     }
 }
@@ -18,7 +18,7 @@ struct Two<T0, T1> {
 }
 
 impl<T0: StableHash, T1: StableHash> StableHash for Two<T0, T1> {
-    fn stable_hash<H: StableHasher>(&self, mut field_address: H::Addr, state: &mut H) {
+    fn stable_hash<H: StableHasher>(&self, field_address: H::Addr, state: &mut H) {
         self.one.stable_hash(field_address.child(0), state);
         self.two.stable_hash(field_address.child(1), state);
     }
