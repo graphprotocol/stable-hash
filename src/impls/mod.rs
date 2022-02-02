@@ -22,14 +22,8 @@ pub(self) fn unordered_unique_stable_hash<H: StableHasher>(
         // independent field addresses.
         let mut new_hasher = H::new();
         member.stable_hash(H::Addr::root(), &mut new_hasher);
-        // TODO: Write raw bytes here
-        // using write method on state
-        new_hasher
-            .finish()
-            .stable_hash(field_address.clone(), state);
+        state.write(field_address.clone(), new_hasher.to_bytes().as_ref());
     }
-
-    // TODO: This may need to include the length, but probably does not
 }
 
 impl<'a, T: StableHash> StableHash for &'a T {

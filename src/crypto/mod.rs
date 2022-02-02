@@ -1,4 +1,4 @@
-pub(crate) mod address;
-pub(crate) mod hasher;
+mod address;
+mod hasher;
 
 pub use hasher::CryptoStableHasher;

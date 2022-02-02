@@ -2,9 +2,7 @@ pub mod crypto;
 pub mod fast;
 mod impls;
 pub mod prelude;
-// TODO: Move some things out of utils
 pub mod utils;
-
 use prelude::*;
 
 /// Like Hasher, but consistent across:
@@ -12,11 +10,17 @@ use prelude::*;
 /// * platforms (eg: 32 bit & 64 bit, x68 and ARM)
 /// * processes (multiple runs of the same program)
 pub trait StableHasher {
-    type Out: StableHash;
+    type Out;
     type Addr: FieldAddress;
-    fn write(&mut self, field_address: Self::Addr, bytes: &[u8]);
-    fn finish(&self) -> Self::Out;
+
     fn new() -> Self;
+    fn write(&mut self, field_address: Self::Addr, bytes: &[u8]);
+    fn mixin(&mut self, other: &Self); // TODO: Also include removal
+    fn finish(&self) -> Self::Out;
+
+    type Bytes: AsRef<[u8]>;
+    fn to_bytes(&self) -> Self::Bytes;
+    fn from_bytes(bytes: Self::Bytes) -> Self;
 }
 
 /// Like Hash, but consistent across:
@@ -29,15 +33,15 @@ pub trait StableHash {
 
 pub trait FieldAddress: Clone {
     fn root() -> Self;
-    fn child(&mut self, number: u64) -> Self;
+    fn child(&self, number: u64) -> Self;
 }
 
 pub fn fast_stable_hash<T: StableHash>(value: &T) -> u128 {
-    profile_fn!(stable_hash);
-    stable_hash_generic::<T, crate::fast::FastStableHasher>(value)
+    profile_fn!(fast_stable_hash);
+    generic_stable_hash::<T, crate::fast::FastStableHasher>(value)
 }
 
 pub fn crypto_stable_hash<T: StableHash>(value: &T) -> [u8; 32] {
     profile_fn!(crypto_stable_hash);
-    stable_hash_generic::<T, crate::crypto::CryptoStableHasher>(value)
+    generic_stable_hash::<T, crate::crypto::CryptoStableHasher>(value)
 }

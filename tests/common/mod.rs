@@ -2,8 +2,9 @@ use firestorm::profile_fn;
 pub use stable_hash::fast_stable_hash;
 use stable_hash::*;
 
+#[allow(dead_code)]
 pub fn crypto_stable_hash_str(value: &impl StableHash) -> String {
-    profile_fn!(crypto_hash);
+    profile_fn!(crypto_stable_hash_str);
 
     let raw = stable_hash::crypto_stable_hash(value);
     hex::encode(raw)

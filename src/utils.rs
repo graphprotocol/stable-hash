@@ -36,7 +36,7 @@ pub struct AsInt<'a> {
 }
 
 impl StableHash for AsInt<'_> {
-    fn stable_hash<H: StableHasher>(&self, mut field_address: H::Addr, state: &mut H) {
+    fn stable_hash<H: StableHasher>(&self, field_address: H::Addr, state: &mut H) {
         profile_method!(stable_hash);
 
         let canon = trim_zeros(self.little_endian);
@@ -47,7 +47,7 @@ impl StableHash for AsInt<'_> {
     }
 }
 
-pub(crate) fn stable_hash_generic<T: StableHash, H: StableHasher>(value: &T) -> H::Out {
+pub fn generic_stable_hash<T: StableHash, H: StableHasher>(value: &T) -> H::Out {
     let mut hasher = H::new();
     value.stable_hash(FieldAddress::root(), &mut hasher);
     hasher.finish()

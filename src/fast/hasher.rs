@@ -1,6 +1,9 @@
+use std::convert::TryInto;
+
 use super::fld::{FldMixA, FldMixB};
 use crate::prelude::*;
 
+#[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Clone)]
 pub struct FastStableHasher {
     mixer1: FldMixA,
     mixer2: FldMixB,
@@ -10,12 +13,36 @@ pub struct FastStableHasher {
 impl StableHasher for FastStableHasher {
     type Out = u128;
     type Addr = u64;
+    type Bytes = [u8; 40];
 
     fn new() -> Self {
         Self {
             mixer1: FldMixA::new(),
             mixer2: FldMixB::new(),
             count: 0,
+        }
+    }
+
+    fn mixin(&mut self, other: &Self) {
+        self.mixer1.mixin(&other.mixer1);
+        self.mixer2.mixin(&other.mixer2);
+        self.count += other.count;
+    }
+
+    fn to_bytes(&self) -> Self::Bytes {
+        unsafe {
+            std::mem::transmute((
+                self.mixer1.to_bytes(),
+                self.mixer2.to_bytes(),
+                self.count.to_le_bytes(),
+            ))
+        }
+    }
+    fn from_bytes(bytes: Self::Bytes) -> Self {
+        Self {
+            mixer1: FldMixA::from_bytes(bytes[0..16].try_into().unwrap()),
+            mixer2: FldMixB::from_bytes(bytes[16..32].try_into().unwrap()),
+            count: u64::from_le_bytes(bytes[32..40].try_into().unwrap()),
         }
     }
 
@@ -93,12 +120,8 @@ impl StableHasher for FastStableHasher {
     fn finish(&self) -> u128 {
         profile_method!(finish);
 
-        let bytes: [u8; 32] = unsafe {
-            std::mem::transmute((
-                self.mixer1.raw().to_le_bytes(),
-                self.mixer2.raw().to_le_bytes(),
-            ))
-        };
+        let bytes: [u8; 32] =
+            unsafe { std::mem::transmute((self.mixer1.to_bytes(), self.mixer2.to_bytes())) };
         xxhash_rust::xxh3::xxh3_128_with_seed(&bytes, self.count)
     }
 }

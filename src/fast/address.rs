@@ -1,11 +1,13 @@
 use crate::prelude::*;
+use xxhash_rust::xxh3::Xxh3;
 
+// TODO: Consider trying XXH here
 impl FieldAddress for u64 {
     fn root() -> Self {
         17
     }
     #[inline]
-    fn child(&mut self, number: u64) -> Self {
+    fn child(&self, number: u64) -> Self {
         profile_method!(child);
 
         self.wrapping_mul(486_187_739).wrapping_add(number as u64)
@@ -18,7 +20,7 @@ mod test {
 
     use std::collections::HashSet;
 
-    fn recurse(mut field_address: u64, depth: usize, length: usize, collector: &mut HashSet<u64>) {
+    fn recurse(field_address: u64, depth: usize, length: usize, collector: &mut HashSet<u64>) {
         // Struct/Recursion check
         for i in 0..6 {
             let child = field_address.child(i);
