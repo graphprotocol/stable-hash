@@ -69,7 +69,6 @@ where
     F: FnOnce(&ChildState) -> T,
 {
     let prev_state = value.state.swap(new_state, SeqCst);
-    dbg!((prev_state, new_state));
     if (prev_state & ok_states) == 0 {
         value.set_err(ChildErr::InvalidStateTransition {
             from: prev_state,
