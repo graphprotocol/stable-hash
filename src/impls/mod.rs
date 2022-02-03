@@ -21,8 +21,9 @@ pub(self) fn unordered_unique_stable_hash<H: StableHasher>(
         // Must create an independent hasher to "break" relationship between
         // independent field addresses.
         let mut new_hasher = H::new();
-        member.stable_hash(H::Addr::root(), &mut new_hasher);
-        state.write(field_address.clone(), new_hasher.to_bytes().as_ref());
+        let (a, b) = field_address.unordered();
+        member.stable_hash(a, &mut new_hasher);
+        state.write(b, new_hasher.to_bytes().as_ref());
     }
 }
 

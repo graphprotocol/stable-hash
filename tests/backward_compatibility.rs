@@ -31,7 +31,7 @@ fn add_optional_field() {
         one: 5u32,
         two: Option::<u32>::None,
     };
-    equal!(93872313880446700352540600112003890100, "3428a4134bfdac56aa04614504705b0ffd1d48f27777b109a793e5a641324212"; one, two);
+    equal!(228317862944974914489035817692071488451, "3428a4134bfdac56aa04614504705b0ffd1d48f27777b109a793e5a641324212"; one, two);
 }
 
 #[test]
@@ -41,7 +41,7 @@ fn add_default_field() {
         one: "one",
         two: "",
     };
-    equal!(299097693820868656192212373807570572314, "65bf96c193b5d365191b86da83097939ccd67ac226d9f3a3c991719e338de7ed"; one, two);
+    equal!(102159788849786862060361452936552994672, "65bf96c193b5d365191b86da83097939ccd67ac226d9f3a3c991719e338de7ed"; one, two);
 }
 
 #[test]
@@ -59,14 +59,6 @@ fn some_default_ne() {
     not_equal!(Some(0u32), Option::<u32>::None);
 }
 
-// TODO: What was this test for?
-/*
-#[test]
-fn path_to_some() {
-    not_equal!(Some(0u32), true);
-}
-*/
-
 #[test]
 fn empty_vec_is_default() {
     let one = One { one: true };
@@ -74,7 +66,7 @@ fn empty_vec_is_default() {
         one: true,
         two: Vec::<u32>::new(),
     };
-    equal!(159331941191816660581068356539222878046, "db4657c873e33a60e581eb5458aba6c76f510e023872c76a3134608619342c59"; one, two);
+    equal!(68716444511219711654951193759121521601, "db4657c873e33a60e581eb5458aba6c76f510e023872c76a3134608619342c59"; one, two);
 }
 
 #[test]
@@ -110,7 +102,7 @@ fn as_bytes() {
 #[test]
 fn numbers_through_vec() {
     equal!(
-        324384669026459709482450615160844533718, "25dfaa9f92a3f2b05a1bdfbc66ec594c545dc39ebdb0e9ae769350ea1726e2b7";
+        245546669380146169718248745109897974160, "25dfaa9f92a3f2b05a1bdfbc66ec594c545dc39ebdb0e9ae769350ea1726e2b7";
         vec![1u32, 2u32],
         vec![1u16, 2u16]
     );

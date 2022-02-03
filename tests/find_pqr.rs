@@ -42,7 +42,7 @@ fn find_pqr() {
     let mut q = u64::MAX;
     loop {
         if let Some(p) = find_p(q as u128) {
-            dbg!((p, q));
+            println!("{:?}", (p, q));
             break;
         }
         q -= 2;

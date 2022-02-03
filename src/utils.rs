@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use crate::verification::*;
 
 /// Treat some &[u8] as a sequence of bytes, rather than a sequence of numbers.
 /// Using this can result in a significant performance gain but does not support
@@ -39,19 +40,28 @@ impl StableHash for AsInt<'_> {
     fn stable_hash<H: StableHasher>(&self, field_address: H::Addr, state: &mut H) {
         profile_method!(stable_hash);
 
+        // Having the negative sign be a child makes it possible to change the schema
+        // from u32 to i64 in a backward compatible way.
+        // This is also allowing for negative 0, like float, which is not used by
+        // any standard impl but may be used by some types.
+        if self.is_negative {
+            state.write(field_address.child(0), &[]);
+        }
         let canon = trim_zeros(self.little_endian);
         if !canon.is_empty() {
-            self.is_negative.stable_hash(field_address.child(0), state);
             state.write(field_address, canon);
         }
     }
 }
 
-pub fn generic_stable_hash<T: StableHash, H: StableHasher>(value: &T) -> H::Out {
+pub(crate) fn generic_stable_hash<T: StableHash, H: StableHasher>(value: &T) -> H::Out {
     let mut hasher = H::new();
     value.stable_hash(FieldAddress::root(), &mut hasher);
     hasher.finish()
 }
 
-// TODO: Write a sanity checker that exhaustively verifies that there
-// are no collisions for field addresses
+// TODO: Create unit tests where this should fail
+pub fn check_for_child_errors<T: StableHash>(value: &T) -> Result<(), (ChildErr, Vec<PathItem>)> {
+    profile_fn!(check_for_child_errors);
+    generic_stable_hash::<T, crate::verification::ChildChecker>(value)
+}
