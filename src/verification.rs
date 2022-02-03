@@ -69,6 +69,7 @@ where
     F: FnOnce(&ChildState) -> T,
 {
     let prev_state = value.state.swap(new_state, SeqCst);
+    dbg!((prev_state, new_state));
     if (prev_state & ok_states) == 0 {
         value.set_err(ChildErr::InvalidStateTransition {
             from: prev_state,
@@ -145,7 +146,6 @@ impl StableHasher for ChildChecker {
     }
     fn finish(&self) -> Self::Out {
         if let Some(err) = &self.err {
-            // TODO: This isn't triggered for unordered because it gets added to the wrong hasher.
             Err(err.clone())
         } else {
             Ok(())
