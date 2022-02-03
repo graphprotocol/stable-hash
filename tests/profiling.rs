@@ -31,7 +31,7 @@ fn compare() {
 }
 
 #[test]
-//#[ignore = "benchmark"]
+#[ignore = "benchmark"]
 fn bench() {
     use rand::{thread_rng, Rng, RngCore};
     trait R {
@@ -260,9 +260,11 @@ fn bench() {
         let c = crypto_stable_hash(&value);
         let duration_c = Instant::now() - s;
 
+        assert_eq!(Ok(()), check_for_child_errors(&value));
+
         factor += duration_c.as_secs_f64() / duration_x.as_secs_f64();
 
-        drop((x, c));
+        drop((x, c, value));
     }
     factor /= count as f64;
     println!("Factor: {}", factor);

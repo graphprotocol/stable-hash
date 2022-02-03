@@ -2,12 +2,19 @@ use crate::prelude::*;
 use blake3::{Hasher, OutputReader};
 use leb128::write::unsigned as write_varint;
 
-#[derive(Clone)]
 pub struct CryptoAddress {
     hasher: Hasher,
 }
 
 impl FieldAddress for CryptoAddress {
+    fn unordered(&self) -> (Self, Self) {
+        (
+            Self::root(),
+            Self {
+                hasher: self.hasher.clone(),
+            },
+        )
+    }
     fn root() -> Self {
         profile_method!(root);
 

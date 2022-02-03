@@ -1,7 +1,5 @@
 use crate::prelude::*;
-use xxhash_rust::xxh3::Xxh3;
 
-// TODO: Consider trying XXH here
 impl FieldAddress for u64 {
     fn root() -> Self {
         17
@@ -11,6 +9,10 @@ impl FieldAddress for u64 {
         profile_method!(child);
 
         self.wrapping_mul(486_187_739).wrapping_add(number as u64)
+    }
+    #[inline]
+    fn unordered(&self) -> (Self, Self) {
+        (Self::root(), *self)
     }
 }
 

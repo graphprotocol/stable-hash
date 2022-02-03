@@ -10,7 +10,7 @@ pub struct FldMix<const P: u128, const Q: u128, const R: u128>(Wrapping<u128>);
 pub type FldMixA = FldMix<3860031, 2779, 2>;
 pub type FldMixB = FldMix<42535295865117307898334180790765617159, 18446744073709551609, 8>;
 
-// TODO: Add a function to solve for the inverse.
+// TODO: Add a function to solve for the inverse for an 'unmixin'
 impl<const P: u128, const Q: u128, const R: u128> FldMix<P, Q, R> {
     #[inline]
     pub const fn new() -> Self {

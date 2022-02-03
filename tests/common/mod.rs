@@ -1,6 +1,6 @@
 use firestorm::profile_fn;
-pub use stable_hash::fast_stable_hash;
 use stable_hash::*;
+pub use stable_hash::{fast_stable_hash, utils::check_for_child_errors};
 
 #[allow(dead_code)]
 pub fn crypto_stable_hash_str(value: &impl StableHash) -> String {
@@ -16,17 +16,17 @@ macro_rules! equal {
         $(
             assert_eq!(common::fast_stable_hash(&$data), $value_xx);
             assert_eq!(&common::crypto_stable_hash_str(&$data), $value_crypto);
+            assert_eq!(Ok(()), common::check_for_child_errors(&$data));
         )+
     }
 }
 
 #[macro_export]
 macro_rules! not_equal {
-    ($left:expr, $right:expr) => {
-        assert!(
-            common::fast_stable_hash(&$left) != common::fast_stable_hash(&$right)
-                && common::crypto_stable_hash_str(&$left)
-                    != common::crypto_stable_hash_str(&$right)
-        )
-    };
+    ($left:expr, $right:expr) => {{
+        assert!(common::fast_stable_hash(&$left) != common::fast_stable_hash(&$right));
+        assert!(common::crypto_stable_hash_str(&$left) != common::crypto_stable_hash_str(&$right));
+        assert_eq!(Ok(()), common::check_for_child_errors(&$left));
+        assert_eq!(Ok(()), common::check_for_child_errors(&$right));
+    }};
 }

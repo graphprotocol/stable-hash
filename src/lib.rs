@@ -3,6 +3,7 @@ pub mod fast;
 mod impls;
 pub mod prelude;
 pub mod utils;
+mod verification;
 use prelude::*;
 
 /// Like Hasher, but consistent across:
@@ -31,9 +32,10 @@ pub trait StableHash {
     fn stable_hash<H: StableHasher>(&self, field_address: H::Addr, state: &mut H);
 }
 
-pub trait FieldAddress: Clone {
+pub trait FieldAddress: Sized {
     fn root() -> Self;
     fn child(&self, number: u64) -> Self;
+    fn unordered(&self) -> (Self, Self);
 }
 
 pub fn fast_stable_hash<T: StableHash>(value: &T) -> u128 {
