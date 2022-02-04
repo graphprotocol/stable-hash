@@ -125,6 +125,7 @@ impl StableHasher for ChildChecker {
     fn new() -> Self {
         Self { err: None }
     }
+    // TODO: We can check if all the field_address hit the same root
     fn write(&mut self, field_address: Self::Addr, _bytes: &[u8]) {
         swap_state(
             &field_address,
