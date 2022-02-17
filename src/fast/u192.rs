@@ -8,9 +8,8 @@ use std::ops::{Add, Mul};
 // and discarded the top-half)
 //
 /// Little-endian large integer type
-#[repr(C)]
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub(crate) struct U192(pub [u64; 3]);
+pub struct U192(pub [u64; 3]);
 
 impl Mul for U192 {
     type Output = Self;
