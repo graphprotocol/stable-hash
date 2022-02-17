@@ -29,7 +29,7 @@ macro_rules! set(
 #[test]
 fn hash_map_eq() {
     equal!(
-        256719470344896394094682169332321082604, "25130dd4633e3e9ff049594c26ca698f3a0513f9c14d98ff69744b8a2237ab9f";
+        60093794751952876589018848897648863192, "25130dd4633e3e9ff049594c26ca698f3a0513f9c14d98ff69744b8a2237ab9f";
         map!{ 1 => "one", 2 => "two", 3 => "three" },
         map!{ 3 => "three", 1 => "one", 2 => "two" }
     );
@@ -70,7 +70,7 @@ fn hash_map_ne_swap() {
 #[test]
 fn hash_set_eq() {
     equal!(
-        97193918653041483173484915455375010047, "4a87fcf3748ef16f7ebd64f1547d757a0b74c26d06a3368bcc03a8fce77734ef";
+        261168114195377271993952934537749440506, "4a87fcf3748ef16f7ebd64f1547d757a0b74c26d06a3368bcc03a8fce77734ef";
         set!{1, 2, 3},
         set!{3, 2, 1}
     );
