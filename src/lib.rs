@@ -16,7 +16,7 @@ pub trait StableHasher {
 
     fn new() -> Self;
     fn write(&mut self, field_address: Self::Addr, bytes: &[u8]);
-    fn mixin(&mut self, other: &Self); // TODO: Also include removal
+    fn mixin(&mut self, other: &Self);
     fn finish(&self) -> Self::Out;
 
     type Bytes: AsRef<[u8]>;

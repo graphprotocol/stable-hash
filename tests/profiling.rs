@@ -4,7 +4,6 @@ use std::hash::Hash;
 
 use common::*;
 use firestorm::profile_fn;
-use legacy;
 use stable_hash::utils::AsBytes;
 use stable_hash::*;
 
@@ -244,7 +243,7 @@ impl R for B {
 }
 
 #[test]
-//#[ignore = "benchmark"]
+#[ignore = "benchmark"]
 fn bench() {
     mod legacy_impl {
         use super::{Value, A, B, C};
@@ -306,10 +305,6 @@ fn bench() {
 
     let mut factor = 0.0;
 
-    fn legacy_crypto<T: legacy::StableHash>(value: &T) -> [u8; 32] {
-        legacy::utils::stable_hash::<legacy::crypto::SetHasher, T>(value)
-    }
-
     let count = 80;
     for _ in 0..count {
         use std::time::Instant;
@@ -320,7 +315,6 @@ fn bench() {
         let duration_x = Instant::now() - s;
 
         let s = Instant::now();
-        //let c = legacy_crypto(&value);
         let c = crypto_stable_hash(&value);
         let duration_c = Instant::now() - s;
 
