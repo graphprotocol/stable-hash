@@ -28,10 +28,11 @@ impl FldMix {
         Self::P + Self::Q * (x + y) + Self::R * x * y
     }
 
-    pub fn mix(&mut self, value: u128) {
+    pub fn mix(&mut self, value: u128, seed: u64) {
         // Peformance: Somehow transmuting this is *way*
-        // faster than (value, 0u64)
-        let value = unsafe { transmute((0u64, value)) };
+        // faster than (value, seed)
+        // See also 0d123631-c654-4246-8d26-092c21d43037
+        let value = unsafe { transmute((seed, value)) };
         self.0 = Self::u(self.0, value);
     }
 
@@ -69,24 +70,30 @@ mod tests {
     }
 
     #[test]
+    fn seed_cannot_collide_with_identity() {
+        // See also 0d123631-c654-4246-8d26-092c21d43037
+        assert!(FldMix::new().0 .0[0] > (u128::MAX >> 65) as u64);
+    }
+
+    #[test]
     fn mixme() {
         let mut a = FldMix::new();
-        a.mix(100);
-        a.mix(10);
-        a.mix(999);
+        a.mix(100, u64::MAX);
+        a.mix(10, 10);
+        a.mix(999, 100);
 
         let mut b = FldMix::new();
-        b.mix(10);
-        b.mix(999);
-        b.mix(100);
+        b.mix(10, 10);
+        b.mix(999, 100);
+        b.mix(100, u64::MAX);
 
         assert_eq!(a, b);
 
         let mut c = FldMix::new();
         let mut d = FldMix::new();
-        c.mix(999);
-        c.mix(10);
-        d.mix(100);
+        c.mix(999, 100);
+        c.mix(10, 10);
+        d.mix(100, u64::MAX);
         c.combine(d);
         assert_eq!(b, c);
     }
