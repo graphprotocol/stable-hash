@@ -47,8 +47,7 @@ impl StableHasher for FastStableHasher {
         // For more information about XXH3, see this:
         // https://fastcompression.blogspot.com/2019/03/presenting-xxh3.html
         let hash = xxhash_rust::xxh3::xxh3_128_with_seed(bytes, field_address as u64);
-        // See also 0d123631-c654-4246-8d26-092c21d43037
-        self.mixer.mix(hash, (field_address >> 65) as u64);
+        self.mixer.mix(hash, (field_address >> 64) as u64);
         self.count += 1;
     }
 

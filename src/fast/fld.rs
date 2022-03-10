@@ -32,7 +32,7 @@ impl FldMix {
         // Peformance: Somehow transmuting this is *way*
         // faster than (value, seed)
         // See also 0d123631-c654-4246-8d26-092c21d43037
-        let value = unsafe { transmute((seed, value)) };
+        let value = unsafe { transmute((seed & (u64::MAX >> 1), value)) };
         self.0 = Self::u(self.0, value);
     }
 
@@ -72,7 +72,8 @@ mod tests {
     #[test]
     fn seed_cannot_collide_with_identity() {
         // See also 0d123631-c654-4246-8d26-092c21d43037
-        assert!(FldMix::new().0 .0[0] > (u128::MAX >> 65) as u64);
+        let first = FldMix::new().0 .0[0];
+        assert!(first != first & (u64::MAX >> 1));
     }
 
     #[test]
