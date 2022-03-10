@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-impl FieldAddress for u64 {
+impl FieldAddress for u128 {
     fn root() -> Self {
         17
     }
@@ -8,7 +8,7 @@ impl FieldAddress for u64 {
     fn child(&self, number: u64) -> Self {
         profile_method!(child);
 
-        self.wrapping_mul(486_187_739).wrapping_add(number as u64)
+        self.wrapping_mul(486_187_739).wrapping_add(number as u128)
     }
     #[inline]
     fn unordered(&self) -> (Self, Self) {
@@ -22,7 +22,7 @@ mod test {
 
     use std::collections::HashSet;
 
-    fn recurse(field_address: u64, depth: usize, length: usize, collector: &mut HashSet<u64>) {
+    fn recurse(field_address: u128, depth: usize, length: usize, collector: &mut HashSet<u128>) {
         // Struct/Recursion check
         for i in 0..6 {
             let child = field_address.child(i);
@@ -55,7 +55,7 @@ mod test {
     #[test]
     fn no_collisions_for_common_prototypes_64() {
         let mut collector = HashSet::new();
-        let root = u64::root();
+        let root = u128::root();
         collector.insert(root);
         recurse(root, 4, 50, &mut collector);
         assert_eq!(30831, collector.len());
