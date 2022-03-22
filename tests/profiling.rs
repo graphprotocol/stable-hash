@@ -170,6 +170,9 @@ impl StableHash for Value {
                 4
             }
         };
+        // Alternatively, variant.stable_hash(field_address, state).
+        // But, this is slightly faster at the expense of interacting
+        // with a more low-level API that is easier to screw up.
         state.write(field_address, &[variant]);
     }
 }
