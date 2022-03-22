@@ -148,6 +148,7 @@ enum Value {
     Array([u8; 32]),
 }
 
+// See also d3ba3adc-6e9b-4586-a7e7-6b542df39462
 impl StableHash for Value {
     fn stable_hash<H: StableHasher>(&self, field_address: H::Addr, state: &mut H) {
         let variant = match self {
@@ -179,6 +180,7 @@ struct C {
     n: i32,
 }
 
+// See also d3ba3adc-6e9b-4586-a7e7-6b542df39462
 impl StableHash for C {
     fn stable_hash<H: StableHasher>(&self, field_address: H::Addr, state: &mut H) {
         self.s.stable_hash(field_address.child(0), state);

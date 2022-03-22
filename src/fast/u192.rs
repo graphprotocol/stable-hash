@@ -44,13 +44,13 @@ impl Add for U192 {
         let me = &self.0;
         let you = &other.0;
 
-        let (r0, overflow) = me[0].overflowing_add(you[0]);
-        let (res, overflow1) = me[1].overflowing_add(you[1]);
-        let (r1, overflow2) = res.overflowing_add(overflow as u64);
+        let (r0, overflow0) = me[0].overflowing_add(you[0]);
+        let (res, overflow1a) = me[1].overflowing_add(you[1]);
+        let (r1, overflow1b) = res.overflowing_add(overflow0 as u64);
 
         let r2 = me[2]
             .wrapping_add(you[2])
-            .wrapping_add(overflow1 as u64 + overflow2 as u64);
+            .wrapping_add(overflow1a as u64 + overflow1b as u64);
 
         U192([r0, r1, r2])
     }

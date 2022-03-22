@@ -16,6 +16,8 @@ impl<'a, T: StableHash> StableHash for &'a [T] {
             item.stable_hash(field_address.child(index as u64), state);
         }
         // This is needed to disambiguate when the last members are default
+        // For example, vec![true, false] and vec![true, false, false] should
+        // not collide.
         // See also 33a9b3bf-0d43-4fd0-a3ed-a77807505255
         self.len().stable_hash(field_address, state);
     }
