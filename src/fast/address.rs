@@ -43,11 +43,8 @@ mod test {
     /// one for our use case of common structures to be digested by trying every
     /// permutation of all structs several deep and long Vecs for children and
     /// asserting 0 collisions on over 11 million common <u64>
-    /// paths. Just for kicks I
-    /// ran it on over 700 million paths before committing, but this test did
-    /// not complete in a reasonable enough amount of time to be committed.
-    /// Larger than that and we get dangerously close to birthday collisions
-    /// anyway so I'm calling this good enough.
+    /// paths. Just for kicks I ran it on over 1 billion paths before committing, but
+    /// this test did not complete in a reasonable enough amount of time to be committed.
     ///
     /// The actual number of struct and vec prototypes verified by this test is
     /// astronomical, because any valid combinatorial sequence of paths made of
