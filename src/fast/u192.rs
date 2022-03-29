@@ -1,4 +1,3 @@
-use std::mem::transmute;
 use std::ops::{Add, Mul};
 
 // This was started by the output of the uint crate,
@@ -18,8 +17,9 @@ impl Mul for U192 {
         let me = &self.0;
         let you = &other.0;
 
-        let mult = |m: usize, y: usize| unsafe {
-            transmute::<_, (u64, u64)>(me[m] as u128 * you[y] as u128)
+        let mult = |m: usize, y: usize| {
+            let v = me[m] as u128 * you[y] as u128;
+            (v as u64, (v >> 64) as u64)
         };
 
         let (r0, r1) = mult(0, 0);

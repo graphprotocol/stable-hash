@@ -2,7 +2,6 @@ use std::convert::TryInto;
 
 use super::fld::FldMix;
 use crate::prelude::*;
-use std::mem::transmute;
 
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub struct FastStableHasher {
@@ -28,8 +27,16 @@ impl StableHasher for FastStableHasher {
     }
 
     fn to_bytes(&self) -> Self::Bytes {
-        unsafe { transmute((self.mixer.to_bytes(), self.count.to_le_bytes())) }
+        let mixer = self.mixer.to_bytes();
+        let count = self.count.to_le_bytes();
+
+        let mut bytes = [0; 32];
+        bytes[0..24].copy_from_slice(&mixer);
+        bytes[24..32].copy_from_slice(&count);
+
+        bytes
     }
+
     fn from_bytes(bytes: Self::Bytes) -> Self {
         Self {
             mixer: FldMix::from_bytes(bytes[0..24].try_into().unwrap()),

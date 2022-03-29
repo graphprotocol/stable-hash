@@ -1,5 +1,4 @@
 use super::u192::U192;
-use std::mem::transmute;
 
 // Useful reading: https://kevinventullo.com/2018/12/24/hashing-unordered-sets-how-far-will-cleverness-take-you/
 // Followed by: https://jeremykun.com/2021/10/14/group-actions-and-hashing-unordered-multisets/
@@ -29,10 +28,11 @@ impl FldMix {
     }
 
     pub fn mix(&mut self, value: u128, seed: u64) {
-        // Peformance: Somehow transmuting this is *way*
-        // faster than (value, seed)
         // See also 0d123631-c654-4246-8d26-092c21d43037
-        let value = unsafe { transmute((seed & (u64::MAX >> 1), value)) };
+        let v0 = seed & (u64::MAX >> 1);
+        let v1 = value as u64;
+        let v2 = (value >> 64) as u64;
+        let value = U192([v0, v1, v2]);
         self.0 = Self::u(self.0, value);
     }
 
@@ -49,12 +49,19 @@ impl FldMix {
 
     #[inline]
     pub fn to_bytes(&self) -> [u8; 24] {
-        unsafe { transmute(self.0) }
+        let mut bytes = [0; 24];
+        bytes[0..8].copy_from_slice(&self.0 .0[0].to_le_bytes());
+        bytes[8..16].copy_from_slice(&self.0 .0[1].to_le_bytes());
+        bytes[16..24].copy_from_slice(&self.0 .0[2].to_le_bytes());
+        bytes
     }
 
     #[inline]
-    pub fn from_bytes(value: [u8; 24]) -> Self {
-        unsafe { transmute(value) }
+    pub fn from_bytes(bytes: [u8; 24]) -> Self {
+        let v0 = u64::from_le_bytes(bytes[0..8].try_into().unwrap());
+        let v1 = u64::from_le_bytes(bytes[8..16].try_into().unwrap());
+        let v2 = u64::from_le_bytes(bytes[16..24].try_into().unwrap());
+        Self(U192([v0, v1, v2]))
     }
 }
 

@@ -14,9 +14,6 @@
 //!    (where collide is defined as contribution to the hash is injective in respect to the encoding. It is
 //!    still possible to find collisions in the final output, especially for the non-cryptographic version)
 
-// TODO: Ensure that all tests pass on big endian machines
-#![cfg(target_endian = "little")]
-
 pub mod crypto;
 pub mod fast;
 mod impls;
