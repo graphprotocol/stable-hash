@@ -1,8 +1,10 @@
 [package]
 name = "stable-hash"
-version = "0.3.1"
+version = "0.3.2"
 authors = ["Zac Burns <That3Percent@gmail.com>"]
 edition = "2018"
+license = "MIT"
+description = "A stable, structured hash"
 
 
 [dependencies]
