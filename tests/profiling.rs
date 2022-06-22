@@ -183,13 +183,7 @@ struct C {
     n: i32,
 }
 
-// See also d3ba3adc-6e9b-4586-a7e7-6b542df39462
-impl StableHash for C {
-    fn stable_hash<H: StableHasher>(&self, field_address: H::Addr, state: &mut H) {
-        self.s.stable_hash(field_address.child(0), state);
-        self.n.stable_hash(field_address.child(1), state);
-    }
-}
+impl_stable_hash!(C { s, n });
 
 impl R for C {
     fn rand() -> Self {
@@ -207,13 +201,7 @@ struct A {
     v3: Vec<B>,
 }
 
-impl StableHash for A {
-    fn stable_hash<H: StableHasher>(&self, field_address: H::Addr, state: &mut H) {
-        self.v1.stable_hash(field_address.child(0), state);
-        self.v2.stable_hash(field_address.child(1), state);
-        self.v3.stable_hash(field_address.child(2), state);
-    }
-}
+impl_stable_hash!(A { v1, v2, v3 });
 
 impl R for A {
     fn rand() -> Self {
@@ -231,12 +219,7 @@ struct B {
     c: HashMap<String, C>,
 }
 
-impl StableHash for B {
-    fn stable_hash<H: StableHasher>(&self, field_address: H::Addr, state: &mut H) {
-        self.a.stable_hash(field_address.child(0), state);
-        self.c.stable_hash(field_address.child(1), state);
-    }
-}
+impl_stable_hash!(B { a, c });
 
 impl R for B {
     fn rand() -> Self {
@@ -245,90 +228,4 @@ impl R for B {
             c: R::rand(),
         }
     }
-}
-
-#[test]
-#[ignore = "benchmark"]
-fn bench() {
-    mod legacy_impl {
-        use super::{Value, A, B, C};
-        use legacy::prelude::*;
-        use legacy::utils::AsBytes;
-
-        impl StableHash for A {
-            fn stable_hash<H: StableHasher>(&self, mut field_address: H::Seq, state: &mut H) {
-                self.v1.stable_hash(field_address.next_child(), state);
-                self.v2.stable_hash(field_address.next_child(), state);
-                self.v3.stable_hash(field_address.next_child(), state);
-            }
-        }
-
-        impl StableHash for C {
-            fn stable_hash<H: StableHasher>(&self, mut field_address: H::Seq, state: &mut H) {
-                self.s.stable_hash(field_address.next_child(), state);
-                self.n.stable_hash(field_address.next_child(), state);
-            }
-        }
-
-        impl StableHash for B {
-            fn stable_hash<H: StableHasher>(&self, mut field_address: H::Seq, state: &mut H) {
-                self.a.stable_hash(field_address.next_child(), state);
-                self.c.stable_hash(field_address.next_child(), state);
-            }
-        }
-
-        impl StableHash for Value {
-            fn stable_hash<H: legacy::StableHasher>(
-                &self,
-                mut field_address: H::Seq,
-                state: &mut H,
-            ) {
-                let child = field_address.next_child();
-                let variant = match self {
-                    Self::Null => return,
-                    Self::Number(n) => {
-                        n.stable_hash(field_address.next_child(), state);
-                        "Number"
-                    }
-                    Self::String(n) => {
-                        n.stable_hash(field_address.next_child(), state);
-                        "String"
-                    }
-                    Self::Bool(n) => {
-                        n.stable_hash(field_address.next_child(), state);
-                        "Bool"
-                    }
-                    Self::Array(n) => {
-                        AsBytes(n).stable_hash(field_address.next_child(), state);
-                        "Array"
-                    }
-                };
-                variant.stable_hash(child, state);
-            }
-        }
-    }
-
-    let mut factor = 0.0;
-
-    let count = 80;
-    for _ in 0..count {
-        use std::time::Instant;
-        let value: A = R::rand();
-
-        let s = Instant::now();
-        let x = fast_stable_hash(&value);
-        let duration_x = Instant::now() - s;
-
-        let s = Instant::now();
-        let c = crypto_stable_hash(&value);
-        let duration_c = Instant::now() - s;
-
-        assert_eq!(Ok(()), check_for_child_errors(&value));
-
-        factor += duration_c.as_secs_f64() / duration_x.as_secs_f64();
-
-        drop((x, c, value));
-    }
-    factor /= count as f64;
-    println!("Factor: {}", factor);
 }

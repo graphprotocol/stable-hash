@@ -17,6 +17,7 @@
 pub mod crypto;
 pub mod fast;
 mod impls;
+mod macros;
 pub mod prelude;
 pub mod utils;
 mod verification;
