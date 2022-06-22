@@ -28,10 +28,10 @@ macro_rules! equal {
 
 #[macro_export]
 macro_rules! not_equal {
-    ($left:expr, $right:expr) => {
+    ($left:expr, $right:expr) => {{
         assert!(
             common::xxhash(&$left) != common::xxhash(&$right)
                 && common::crypto_hash(&$left) != common::crypto_hash(&$right)
         );
-    };
+    }};
 }

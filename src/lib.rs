@@ -1,5 +1,6 @@
 pub mod crypto;
 mod impls;
+mod macros;
 pub mod prelude;
 mod sequence_number;
 mod stable_hash;
