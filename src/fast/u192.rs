@@ -1,4 +1,4 @@
-use std::ops::{Add, Mul};
+use std::{ops::{Add, Sub, Mul}};
 
 // This was started by the output of the uint crate,
 // then heavily reduced to only the parts we need
@@ -51,6 +51,24 @@ impl Add for U192 {
         let r2 = me[2]
             .wrapping_add(you[2])
             .wrapping_add(overflow1a as u64 + overflow1b as u64);
+
+        U192([r0, r1, r2])
+    }
+}
+
+impl Sub for U192 {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self {
+        let me = &self.0;
+        let you = &other.0;
+
+        let (r0, overflow0) = me[0].overflowing_sub(you[0]);
+        let (res, overflow1a) = me[1].overflowing_sub(you[1]);
+        let (r1, overflow1b) = res.overflowing_sub(overflow0 as u64);
+
+        let r2 = me[2]
+            .wrapping_sub(you[2])
+            .wrapping_sub(overflow1a as u64 + overflow1b as u64);
 
         U192([r0, r1, r2])
     }
