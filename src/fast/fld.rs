@@ -22,7 +22,7 @@ impl FldMix {
     const P: U192 = U192([2305843009213693959, 2305843009213693950, 0]);
     const Q: U192 = U192([18446744073709551609, 0, 0]);
     const R: U192 = U192([8, 0, 0]);
-    pub const I: U192 = U192([
+    const I: U192 = U192([
         16140901064495857665,
         18446744073709551615,
         18446744073709551615,
@@ -34,19 +34,19 @@ impl FldMix {
     }
 
     #[inline(always)]
-    pub fn u(x: U192, y: U192) -> U192 {
+    fn u(x: U192, y: U192) -> U192 {
         Self::P + Self::Q * (x + y) + Self::R * x * y
     }
 
     #[inline(always)]
-    pub fn u_inverse(x: U192, y: U192) -> U192 {
+    fn u_inverse(x: U192, y: U192) -> U192 {
         Self::mod_inv_2192(Self::Q + Self::R * y) * (x - Self::P - Self::Q * y)
     }
 
     // Implementation of the Extended Euclidean Algorithm for U192s modulo 2^192.
     // Useful reading: http://www-math.ucdenver.edu/~wcherowi/courses/m5410/exeucalg.html
     // Returns the inverse of x modulo 2^192 (assuming x is odd, of course)
-    pub fn mod_inv_2192(mut x: U192) ->  U192 {
+    fn mod_inv_2192(mut x: U192) ->  U192 {
 
         //convert to U256
         let mut x : U256 = U256([x.0[0], x.0[1], x.0[2], 0]);
