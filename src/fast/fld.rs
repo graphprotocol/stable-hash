@@ -11,11 +11,11 @@ pub struct FldMix(U192);
 
 // This is a quick and dirty way to let us do arithmetic modulo 2^192,
 // since the U192 type can only hold values in the range [0, 2^192 - 1].
-// We need to divide 2^192 by an integer (once) in order to calculate inverses mod 2^192. 
-// Alternatively, is there a way to compute floor(p / q) and p % q 
+// We need to divide 2^192 by an integer (once) in order to calculate inverses mod 2^192.
+// Alternatively, is there a way to compute floor(p / q) and p % q
 // given floor(p - 1) / q and (p - 1) % q? That would help...
 construct_uint! {
-	pub struct U256(4);
+    pub struct U256(4);
 }
 
 impl FldMix {
@@ -46,21 +46,20 @@ impl FldMix {
     // Implementation of the Extended Euclidean Algorithm for U192s modulo 2^192.
     // Useful reading: http://www-math.ucdenver.edu/~wcherowi/courses/m5410/exeucalg.html
     // Returns the inverse of x modulo 2^192 (assuming x is odd, of course)
-    fn mod_inv_2192(mut x: U192) ->  U192 {
-
+    fn mod_inv_2192(mut x: U192) -> U192 {
         //convert to U256
-        let mut x : U256 = U256([x.0[0], x.0[1], x.0[2], 0]);
+        let mut x: U256 = U256([x.0[0], x.0[1], x.0[2], 0]);
 
         if x % U256([2, 0, 0, 0]) == U256::zero() {
             panic!("Even numbers have no inverse mod 2^192");
         }
 
-        let mut b : U256 = U256([0, 0, 0, 1]);
+        let mut b: U256 = U256([0, 0, 0, 1]);
         let modulus: U256 = b;
 
         let mut prev_s: U256 = U256([1, 0, 0, 0]);
         let mut s: U256 = U256([0, 0, 0, 0]);
-        
+
         let mut prev_t: U256 = U256([0, 0, 0, 0]);
         let mut t: U256 = U256([1, 0, 0, 0]);
 
@@ -68,18 +67,18 @@ impl FldMix {
             let quotient: U256 = x / b;
             let mut tmp: U256 = U256::zero();
 
-            tmp = prev_s; 
-            prev_s = s; 
+            tmp = prev_s;
+            prev_s = s;
 
-            if quotient * s > tmp { 
+            if quotient * s > tmp {
                 tmp = tmp + (U256([1, 0, 0, 0]) + (quotient * s) / modulus) * (modulus);
             }
 
-            s = (tmp - quotient * s) % modulus; 
+            s = (tmp - quotient * s) % modulus;
 
             tmp = prev_t;
             prev_t = t;
-            if quotient * t > tmp { 
+            if quotient * t > tmp {
                 tmp = tmp + (U256([1, 0, 0, 0]) + (quotient * t) / modulus) * (modulus);
             }
             t = (tmp - quotient * t) % modulus;
@@ -90,7 +89,6 @@ impl FldMix {
         }
 
         U192([prev_s.0[0], prev_s.0[1], prev_s.0[2]])
-    
     }
 
     pub fn mix(&mut self, value: u128, seed: u64) {
@@ -145,6 +143,8 @@ impl FldMix {
 
 #[cfg(test)]
 mod tests {
+    use rand::Rng;
+
     use super::*;
 
     #[test]
@@ -182,6 +182,54 @@ mod tests {
         d.mix(100, u64::MAX);
         c.combine(d);
         assert_eq!(b, c);
+    }
+
+    #[test]
+    fn unmix_fuzz() {
+        use rand::thread_rng as rng;
+
+        let rand_fldmix_vec = || {
+            let mut v = Vec::new();
+            for _ in 0..rng().gen_range(0..20) {
+                v.push(FldMix(U192([rng().gen(), rng().gen(), rng().gen()])));
+            }
+            v
+        };
+
+        for _ in 0..1000 {
+            let mut mixin = rand_fldmix_vec();
+            let mut mixout = Vec::<FldMix>::new();
+
+            let mut mixin_only = FldMix::new();
+            let mut complete = FldMix::new();
+
+            let take_rand = |v: &mut Vec<FldMix>| {
+                if v.len() == 0 {
+                    return None;
+                }
+                let i = rng().gen_range(0..v.len());
+                Some(v.swap_remove(i))
+            };
+
+            while mixin.len() + mixout.len() > 0 {
+                if rng().gen() {
+                    if let Some(mixin) = take_rand(&mut mixin) {
+                        complete.mixin(&mixin);
+                        if rng().gen() {
+                            mixin_only.mixin(&mixin);
+                        } else {
+                            mixout.push(mixin);
+                        }
+                    }
+                } else {
+                    if let Some(mixout) = take_rand(&mut mixout) {
+                        complete.unmixin(&mixout);
+                    }
+                }
+            }
+
+            assert_eq!(complete, mixin_only);
+        }
     }
 
     #[test]
