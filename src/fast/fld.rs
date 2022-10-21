@@ -197,8 +197,8 @@ mod tests {
         };
 
         for _ in 0..1000 {
-            let mut mixin = rand_fldmix_vec();
-            let mut mixout = Vec::<FldMix>::new();
+            let mut mixins = rand_fldmix_vec();
+            let mut mixouts = Vec::<FldMix>::new();
 
             let mut mixin_only = FldMix::new();
             let mut complete = FldMix::new();
@@ -211,18 +211,22 @@ mod tests {
                 Some(v.swap_remove(i))
             };
 
-            while mixin.len() + mixout.len() > 0 {
+            while mixins.len() + mixouts.len() > 0 {
                 if rng().gen() {
-                    if let Some(mixin) = take_rand(&mut mixin) {
+                    if let Some(mixin) = take_rand(&mut mixins) {
+                        // Include duplicates sometimes to demonstrate this is a multiset.
+                        if rng().gen_range(0..5) == 0 {
+                            mixins.push(mixin);
+                        }
                         complete.mixin(&mixin);
                         if rng().gen() {
                             mixin_only.mixin(&mixin);
                         } else {
-                            mixout.push(mixin);
+                            mixouts.push(mixin);
                         }
                     }
                 } else {
-                    if let Some(mixout) = take_rand(&mut mixout) {
+                    if let Some(mixout) = take_rand(&mut mixouts) {
                         complete.unmixin(&mixout);
                     }
                 }
