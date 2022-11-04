@@ -28,6 +28,13 @@ impl FldMix {
         18446744073709551615,
     ]);
 
+    #[cfg(test)]
+    pub(crate) fn rand() -> Self {
+        use rand::thread_rng as rng;
+        use rand::Rng as _;
+        FldMix(U192([rng().gen(), rng().gen(), rng().gen()]))
+    }
+
     #[inline]
     pub const fn new() -> Self {
         Self(Self::I)
@@ -43,16 +50,15 @@ impl FldMix {
         Self::mod_inv_2192(Self::Q + Self::R * y) * (x - Self::P - Self::Q * y)
     }
 
-    // Implementation of the Extended Euclidean Algorithm for U192s modulo 2^192.
-    // Useful reading: http://www-math.ucdenver.edu/~wcherowi/courses/m5410/exeucalg.html
-    // Returns the inverse of x modulo 2^192 (assuming x is odd, of course)
-    fn mod_inv_2192(mut x: U192) -> U192 {
+    /// Implementation of the Extended Euclidean Algorithm for U192s modulo 2^192.
+    /// Useful reading: http://www-math.ucdenver.edu/~wcherowi/courses/m5410/exeucalg.html
+    /// Returns the inverse of x modulo 2^192 (assuming x is odd, of course)
+    /// Warning: Assumes x is even, but will verify this in debug.
+    fn mod_inv_2192(x: U192) -> U192 {
         //convert to U256
         let mut x: U256 = U256([x.0[0], x.0[1], x.0[2], 0]);
 
-        if x % U256([2, 0, 0, 0]) == U256::zero() {
-            panic!("Even numbers have no inverse mod 2^192");
-        }
+        debug_assert!(x.0[0] % 2 != 0, "Even numbers have no inverse mod 2^192");
 
         let mut b: U256 = U256([0, 0, 0, 1]);
         let modulus: U256 = b;
@@ -65,9 +71,8 @@ impl FldMix {
 
         while b > U256([0, 0, 0, 0]) {
             let quotient: U256 = x / b;
-            let mut tmp: U256 = U256::zero();
 
-            tmp = prev_s;
+            let mut tmp = prev_s;
             prev_s = s;
 
             if quotient * s > tmp {
@@ -100,19 +105,11 @@ impl FldMix {
         self.0 = Self::u(self.0, value);
     }
 
-    pub fn unmix(&mut self, value: u128, seed: u64) {
-        let v0 = seed & (u64::MAX >> 1);
-        let v1 = value as u64;
-        let v2 = (value >> 64) as u64;
-        let value = U192([v0, v1, v2]);
-        self.0 = Self::u_inverse(self.0, value);
-    }
-
     pub fn mixin(&mut self, value: &Self) {
         self.0 = Self::u(self.0, value.0);
     }
 
-    pub fn unmixin(&mut self, value: &Self) {
+    pub fn unmix(&mut self, value: &Self) {
         self.0 = Self::u_inverse(self.0, value.0);
     }
 
@@ -143,8 +140,6 @@ impl FldMix {
 
 #[cfg(test)]
 mod tests {
-    use rand::Rng;
-
     use super::*;
 
     #[test]
@@ -182,92 +177,5 @@ mod tests {
         d.mix(100, u64::MAX);
         c.combine(d);
         assert_eq!(b, c);
-    }
-
-    #[test]
-    fn unmix_fuzz() {
-        use rand::thread_rng as rng;
-
-        let rand_fldmix_vec = || {
-            let mut v = Vec::new();
-            for _ in 0..rng().gen_range(0..20) {
-                v.push(FldMix(U192([rng().gen(), rng().gen(), rng().gen()])));
-            }
-            v
-        };
-
-        for _ in 0..1000 {
-            let mut mixins = rand_fldmix_vec();
-            let mut mixouts = Vec::<FldMix>::new();
-
-            let mut mixin_only = FldMix::new();
-            let mut complete = FldMix::new();
-
-            let take_rand = |v: &mut Vec<FldMix>| {
-                if v.len() == 0 {
-                    return None;
-                }
-                let i = rng().gen_range(0..v.len());
-                Some(v.swap_remove(i))
-            };
-
-            while mixins.len() + mixouts.len() > 0 {
-                if rng().gen() {
-                    if let Some(mixin) = take_rand(&mut mixins) {
-                        // Include duplicates sometimes to demonstrate this is a multiset.
-                        if rng().gen_range(0..5) == 0 {
-                            mixins.push(mixin);
-                        }
-                        complete.mixin(&mixin);
-                        if rng().gen() {
-                            mixin_only.mixin(&mixin);
-                        } else {
-                            mixouts.push(mixin);
-                        }
-                    }
-                } else {
-                    if let Some(mixout) = take_rand(&mut mixouts) {
-                        complete.unmixin(&mixout);
-                    }
-                }
-            }
-
-            assert_eq!(complete, mixin_only);
-        }
-    }
-
-    #[test]
-    fn unmixme() {
-        //test the raw polynomial inverse functionality
-        let a: U192 = FldMix::u(FldMix::I, U192([100, 0, 0]));
-        let a2: U192 = FldMix::u(a, U192([13, 0, 0]));
-        let b: U192 = FldMix::u_inverse(a2, U192([100, 0, 0]));
-        let b2: U192 = FldMix::u_inverse(b, U192([13, 0, 0]));
-
-        assert_eq!(b2, FldMix::I);
-
-        //test the complete mix functionality
-        let mut a = FldMix::new();
-        let mut b = FldMix::new();
-
-        a.mix(100, u64::MAX);
-        a.mix(10, 10);
-        a.mix(999, 100);
-
-        a.unmix(100, u64::MAX);
-        a.unmix(999, 100);
-        a.unmix(10, 10);
-
-        assert_eq!(a, b);
-
-        let mut a = FldMix::new();
-        let mut b = FldMix::new();
-
-        a.mix(100, u64::MAX);
-        b.mix(1282813281, 2);
-        b.mix(100, u64::MAX);
-        b.unmix(1282813281, 2);
-
-        assert_eq!(a, b);
     }
 }
