@@ -3,10 +3,22 @@ use std::convert::TryInto;
 use super::fld::FldMix;
 use crate::prelude::*;
 
-#[derive(PartialEq, Eq, Hash, Clone)]
+#[derive(PartialEq, Eq, Hash, Clone, Debug)]
 pub struct FastStableHasher {
     mixer: FldMix,
     count: u64,
+}
+
+#[cfg(test)]
+impl FastStableHasher {
+    pub(crate) fn rand() -> Self {
+        use rand::thread_rng as rng;
+        use rand::Rng as _;
+        Self {
+            mixer: FldMix::rand(),
+            count: rng().gen(),
+        }
+    }
 }
 
 impl StableHasher for FastStableHasher {
@@ -23,7 +35,12 @@ impl StableHasher for FastStableHasher {
 
     fn mixin(&mut self, other: &Self) {
         self.mixer.mixin(&other.mixer);
-        self.count += other.count;
+        self.count = self.count.wrapping_add(other.count);
+    }
+
+    fn unmix(&mut self, other: &Self) {
+        self.mixer.unmix(&other.mixer);
+        self.count = self.count.wrapping_sub(other.count);
     }
 
     fn to_bytes(&self) -> Self::Bytes {

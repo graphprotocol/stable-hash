@@ -3,7 +3,7 @@ use crate::prelude::*;
 use blake3::Hasher;
 use ibig::UBig;
 use lazy_static::lazy_static;
-use num_traits::identities::One;
+use num_traits::{identities::One, Zero};
 use std::default::Default;
 
 // TODO: Consider using a Solinas prime
@@ -28,6 +28,7 @@ lazy_static! {
 /// parallel as long as field addresses are deterministically produced to
 /// uniquely identify parts within the struct. Conveniently, the FieldAddress::skip
 /// method can be used to jump to parts of a vec or struct efficiently.
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub struct CryptoStableHasher {
     // TODO: (Performance). We want an int 2056 + 2048 = 4104 bit int (u4160 if using a word size of 64 at 65 words)
     // That's enough to handle any sequence of mixin operations without overflow.
@@ -42,14 +43,11 @@ impl Default for CryptoStableHasher {
     }
 }
 
-impl CryptoStableHasher {
-    #[inline]
-    fn mixin_raw(&mut self, digits: &UBig) {
-        profile_method!(mixin_raw);
-
-        self.value *= digits;
-        self.value %= &*P;
-    }
+#[inline]
+fn mul_mod_p(into: &mut UBig, value: &UBig) {
+    profile_method!(mul_mod_p);
+    *into *= value;
+    *into %= &*P;
 }
 
 impl StableHasher for CryptoStableHasher {
@@ -74,13 +72,36 @@ impl StableHasher for CryptoStableHasher {
         let mut digits = [0u8; 256];
         output.fill(&mut digits);
         let digits = UBig::from_le_bytes(&digits);
-        self.mixin_raw(&digits)
+        mul_mod_p(&mut self.value, &digits);
     }
 
+    #[inline]
     fn mixin(&mut self, other: &Self) {
-        profile_method!(mixin);
+        mul_mod_p(&mut self.value, &other.value);
+    }
 
-        self.mixin_raw(&other.value)
+    fn unmix(&mut self, other: &Self) {
+        // The capacity 2049 is because that's the maximum number of divisions there will be.
+        // With high probability, it will all be used.
+        let mut todo = Vec::with_capacity(2049);
+
+        // Find the multiplicative inverse under the field.
+        let mut y = &*P - UBig::from(2u32);
+        while !y.is_zero() {
+            todo.push(y.clone());
+            y = y / 2;
+        }
+        let mut p = UBig::one();
+        while let Some(next) = todo.pop() {
+            let clone = p.clone();
+            mul_mod_p(&mut p, &clone);
+            if next % 2 != 0 {
+                mul_mod_p(&mut p, &other.value);
+            }
+        }
+
+        // If it's the multiplicative inverse, and we multiply it, then we've inversed it.
+        mul_mod_p(&mut self.value, &p);
     }
 
     fn finish(&self) -> Self::Out {
@@ -102,8 +123,30 @@ impl StableHasher for CryptoStableHasher {
     fn from_bytes(bytes: Vec<u8>) -> Self {
         profile_method!(from_bytes);
 
-        assert!(bytes.len() <= 257);
         let value = UBig::from_le_bytes(&bytes);
+        assert!(&value <= &*P);
         Self { value }
+    }
+}
+
+#[cfg(test)]
+impl CryptoStableHasher {
+    pub(crate) fn rand() -> Self {
+        use rand::Rng;
+        loop {
+            let mut bytes = Vec::new();
+            for _ in 0..257 {
+                let rand_byte: u8 = rand::thread_rng().gen();
+                if bytes.len() == 0 && rand_byte == 0 {
+                    continue;
+                }
+                bytes.push(rand_byte);
+            }
+            let big = UBig::from_be_bytes(&bytes);
+            if &big >= &*P {
+                continue;
+            }
+            return CryptoStableHasher { value: big };
+        }
     }
 }

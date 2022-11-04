@@ -28,16 +28,36 @@ use prelude::*;
 /// * platforms (eg: 32 bit & 64 bit, x68 and ARM)
 /// * processes (multiple runs of the same program)
 pub trait StableHasher {
+    /// The type of value returned when finishing
     type Out;
+
+    /// The type used when identifying where a value is located in a struct
     type Addr: FieldAddress;
 
+    /// Create an empty hasher
     fn new() -> Self;
+
+    /// Add a single field to the hash
     fn write(&mut self, field_address: Self::Addr, bytes: &[u8]);
+
+    /// Adds all fields from another hasher
     fn mixin(&mut self, other: &Self);
+
+    /// Removes all fields from another hasher
+    fn unmix(&mut self, _other: &Self) {
+        unimplemented!()
+    }
+
+    /// Finalize the digest
     fn finish(&self) -> Self::Out;
 
+    /// Used when serializing
     type Bytes: AsRef<[u8]>;
+
+    /// Serialize
     fn to_bytes(&self) -> Self::Bytes;
+
+    /// Deserialize
     fn from_bytes(bytes: Self::Bytes) -> Self;
 }
 
@@ -132,4 +152,78 @@ pub fn fast_stable_hash<T: StableHash>(value: &T) -> u128 {
 pub fn crypto_stable_hash<T: StableHash>(value: &T) -> [u8; 32] {
     profile_fn!(crypto_stable_hash);
     generic_stable_hash::<T, crate::crypto::CryptoStableHasher>(value)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fmt::Debug;
+
+    use rand::thread_rng as rng;
+    use rand::Rng as _;
+
+    use crate::crypto::CryptoStableHasher;
+    use crate::fast::FastStableHasher;
+    use crate::StableHasher;
+
+    #[test]
+    fn unmix_fast() {
+        unmix_fuzz(1000, FastStableHasher::rand);
+    }
+
+    #[test]
+    fn unmix_crypto() {
+        unmix_fuzz(30, CryptoStableHasher::rand);
+    }
+
+    fn unmix_fuzz<T, F>(count: u32, f: F)
+    where
+        F: Fn() -> T,
+        T: StableHasher + Eq + Debug + Clone,
+    {
+        let rand_vec = || {
+            let mut v = Vec::new();
+            for _ in 0..rng().gen_range(0..15) {
+                v.push(f());
+            }
+            v
+        };
+        let take_rand = |v: &mut Vec<T>| {
+            if v.len() == 0 {
+                return None;
+            }
+            let i = rng().gen_range(0..v.len());
+            Some(v.swap_remove(i))
+        };
+
+        for _ in 0..count {
+            let mut mixins = rand_vec();
+            let mut mixouts = Vec::<T>::new();
+
+            let mut mixin_only = T::new();
+            let mut complete = T::new();
+
+            while mixins.len() + mixouts.len() > 0 {
+                if rng().gen() {
+                    if let Some(mixin) = take_rand(&mut mixins) {
+                        // Include duplicates sometimes to demonstrate this is a multiset.
+                        if rng().gen_range(0..5) == 0 {
+                            mixins.push(mixin.clone());
+                        }
+                        complete.mixin(&mixin);
+                        if rng().gen() {
+                            mixin_only.mixin(&mixin);
+                        } else {
+                            mixouts.push(mixin);
+                        }
+                    }
+                } else {
+                    if let Some(mixout) = take_rand(&mut mixouts) {
+                        complete.unmix(&mixout);
+                    }
+                }
+            }
+
+            assert_eq!(complete, mixin_only);
+        }
+    }
 }
