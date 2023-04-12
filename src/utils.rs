@@ -54,6 +54,28 @@ impl StableHash for AsInt<'_> {
     }
 }
 
+pub struct AsUnorderedSet<T>(pub T);
+
+impl<'a, T, I> StableHash for AsUnorderedSet<&'a T>
+where
+    &'a T: IntoIterator<Item = I>,
+    I: StableHash,
+{
+    fn stable_hash<H: StableHasher>(&self, field_address: H::Addr, state: &mut H) {
+        profile_method!(stable_hash);
+
+        for member in self.0.into_iter() {
+            // Must create an independent hasher to "break" relationship between
+            // independent field addresses.
+            // See also a817fb02-7c77-41d6-98e4-dee123884287
+            let mut new_hasher = H::new();
+            let (a, b) = field_address.unordered();
+            member.stable_hash(a, &mut new_hasher);
+            state.write(b, new_hasher.to_bytes().as_ref());
+        }
+    }
+}
+
 pub(crate) fn generic_stable_hash<T: StableHash, H: StableHasher>(value: &T) -> H::Out {
     let mut hasher = H::new();
     value.stable_hash(FieldAddress::root(), &mut hasher);
