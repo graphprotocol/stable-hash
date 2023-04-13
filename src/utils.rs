@@ -1,5 +1,6 @@
 use crate::prelude::*;
 use crate::sequence_number::UInt;
+use crate::stable_hash::UnorderedAggregator;
 use crate::SequenceNumberInt;
 use std::borrow::Borrow as _;
 use std::hash::Hasher;
@@ -17,6 +18,33 @@ impl StableHash for AsBytes<'_> {
         if !self.0.is_empty() {
             state.write(sequence_number, self.0)
         }
+    }
+}
+
+pub struct AsUnorderedSet<T>(pub T);
+
+impl<T, I> StableHash for AsUnorderedSet<T>
+where
+    T: Copy + IntoIterator<Item = I>,
+    I: StableHash,
+{
+    fn stable_hash<H: StableHasher>(&self, mut sequence_number: H::Seq, state: &mut H) {
+        profile_method!(stable_hash);
+
+        // First, create child nodes for each element.
+        // Doing this here removes any opportunity for collisions
+        let rollup_seq_no = sequence_number.next_child();
+        let member_seq_no = sequence_number.next_child();
+        let count_seq_no = sequence_number.next_child();
+
+        let mut unordered = state.start_unordered();
+        let mut count = 0usize;
+        for member in self.0.into_iter() {
+            unordered.write(member, member_seq_no.clone());
+            count += 1;
+        }
+        state.finish_unordered(unordered, rollup_seq_no);
+        count.stable_hash(count_seq_no, state);
     }
 }
 
