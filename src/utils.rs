@@ -56,9 +56,9 @@ impl StableHash for AsInt<'_> {
 
 pub struct AsUnorderedSet<T>(pub T);
 
-impl<'a, T, I> StableHash for AsUnorderedSet<&'a T>
+impl<T, I> StableHash for AsUnorderedSet<T>
 where
-    &'a T: IntoIterator<Item = I>,
+    T: Copy + IntoIterator<Item = I>,
     I: StableHash,
 {
     fn stable_hash<H: StableHasher>(&self, field_address: H::Addr, state: &mut H) {
